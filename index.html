@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="ar" dir="rtl">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>بصمة | نظام تسجيل الحضور والانصراف</title>
-<link rel="icon" href="./logo.PNG"  type="image/png"/>
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>بصمة | نظام تسجيل الحضور والانصراف</title>
+    <link rel="icon" href="./logo.PNG"  type="image/png"/>
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
@@ -288,12 +288,6 @@
     border: 1px solid rgba(245,158,11,0.2);
     padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; color: #fbbf24;
   }
-
-  .details-task-row {
-    display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center;
-    padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.04); font-size: 12px;
-  }
 </style>
 </head>
 <body>
@@ -434,11 +428,11 @@
 
       <!-- اختيار مهمة جديدة -->
       <div id="taskSelectArea">
-        <p class="text-xs text-slate-400 mb-2">اختر مهمة لبدء العمل عليها:</p>
+        <p class="text-xs text-slate-400 mb-2">اختر مهمة أو أكثر لبدء العمل عليها (يمكنك اختيار عدة مهام معاً):</p>
         <div id="taskChips" class="flex flex-wrap gap-2 mb-4"></div>
         <button id="startTaskBtn" class="btn-amber" disabled>
           <i class="fa-solid fa-play"></i>
-          بدء المهمة
+          بدء المهام المحددة
         </button>
       </div>
 
@@ -659,6 +653,7 @@
       </div>
       <p class="font-bold text-sm">تطبيق بصمة</p>
       <p class="text-xs text-slate-500 mt-1">الإصدار 2.0.0</p>
+      <p class="text-xs text-slate-500 mt-1">Eng Ahmed Tawheed</p>
       <p class="text-xs text-slate-600 mt-3">جميع البيانات محفوظة محلياً على جهازك</p>
     </div>
   </div>
@@ -700,7 +695,7 @@ const state = {
   records: JSON.parse(localStorage.getItem(STORAGE_KEYS.records) || '[]'),
   session: JSON.parse(localStorage.getItem(STORAGE_KEYS.session) || 'null'),
   hourlyRate: parseFloat(localStorage.getItem(STORAGE_KEYS.hourlyRate)) || 0,
-  selectedTask: null,
+  selectedTasks: [], // تعديل: تحويلها لمصفوفة لاختيار عدة مهام
   liveTimerInterval: null,
   clockInterval: null,
   filterMonth: 'all',
@@ -920,23 +915,35 @@ function renderTaskSection() {
 
 function renderTaskChips() {
   const chipsWrap = document.getElementById('taskChips');
+  // عرض المهام مع إمكانية اختيار عدة مهام (مصفوفة selectedTasks)
   chipsWrap.innerHTML = state.tasks.map(t => `
-    <div class="task-chip ${state.selectedTask === t ? 'selected' : ''}" onclick="selectTask('${t.replace(/'/g, "\\'")}')">
+    <div class="task-chip ${state.selectedTasks.includes(t) ? 'selected' : ''}" onclick="toggleTaskSelection('${t.replace(/'/g, "\\'")}')">
       <i class="fa-solid fa-circle-check text-xs"></i> ${t}
     </div>`).join('');
   const startBtn = document.getElementById('startTaskBtn');
-  startBtn.disabled = !state.selectedTask;
-  startBtn.onclick = startTask;
+  startBtn.disabled = state.selectedTasks.length === 0;
+  startBtn.onclick = startTasks;
 }
 
-function selectTask(task) { state.selectedTask = state.selectedTask === task ? null : task; renderTaskChips(); }
+// تعديل: دالة لاختيار وإلغاء اختيار المهام
+function toggleTaskSelection(task) {
+  const index = state.selectedTasks.indexOf(task);
+  if (index > -1) {
+    state.selectedTasks.splice(index, 1); // إلغاء التحديد
+  } else {
+    state.selectedTasks.push(task); // تحديد
+  }
+  renderTaskChips();
+}
 
-function startTask() {
-  if (!state.selectedTask) { toast('اختر مهمة أولاً', 'warning'); return; }
-  state.session.activeTask = { name: state.selectedTask, startTime: new Date().toISOString() };
+// تعديل: بدء المهام المحددة (جمعها بفاصل | )
+function startTasks() {
+  if (state.selectedTasks.length === 0) { toast('اختر مهمة واحدة على الأقل', 'warning'); return; }
+  const taskName = state.selectedTasks.join(' | '); // جمع المسميات بفاصل |
+  state.session.activeTask = { name: taskName, startTime: new Date().toISOString() };
   save(STORAGE_KEYS.session, state.session);
-  state.selectedTask = null;
-  toast(`تم بدء المهمة: ${state.session.activeTask.name} ⏱️`, 'success');
+  state.selectedTasks = []; // تفريغ المصفوفة بعد البدء
+  toast(`تم بدء المهام: ${taskName} ⏱️`, 'success');
   renderTaskSection();
 }
 
@@ -959,7 +966,7 @@ function renderActiveTask() {
         <p id="activeTaskTimer" class="text-3xl font-black number-display gradient-amber">00:00:00</p>
       </div>
       <button onclick="endTask()" class="btn-danger" style="padding: 12px 20px; font-size: 14px;">
-        <i class="fa-solid fa-stop"></i> إنهاء المهمة
+        <i class="fa-solid fa-stop"></i> إنهاء المهام
       </button>
     </div>`;
 }
@@ -971,7 +978,7 @@ function endTask() {
   const duration = calcDuration(task.startTime, endTime);
   const completedTask = {
     id: Date.now(),
-    name: task.name,
+    name: task.name, // الاسم هنا يحتوي بالفعل على المهام مفصولة بـ |
     startTime: task.startTime,
     endTime: endTime,
     duration: duration.totalMinutes
@@ -980,7 +987,7 @@ function endTask() {
   state.session.tasks.push(completedTask);
   state.session.activeTask = null;
   save(STORAGE_KEYS.session, state.session);
-  toast(`تم إنهاء: ${completedTask.name} (${duration.formormatted || duration.formatted}) ✓`, 'success');
+  toast(`تم إنهاء: ${completedTask.name} (${duration.formatted}) ✓`, 'success');
   renderTaskSection();
 }
 
@@ -1293,12 +1300,10 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
 
   // ====== الورقة 1: ملخص البصمات ======
   const summaryAOA = [];
-  // عنوان التقرير
   summaryAOA.push([`تقرير بصمات - ${state.name || 'موظف'}`]);
   summaryAOA.push([`تاريخ التصدير: ${formatDateArabic(new Date()).fullDate} - ${formatDateArabic(new Date()).timeShort}`]);
   summaryAOA.push([`الراتب بالساعة: ${rate} جنيه | ساعات العمل القياسية: ${STANDARD_HOURS} ساعات | معدل الإضافي: ×${OVERTIME_MULTIPLIER}`]);
   summaryAOA.push([]);
-  // عناوين الأعمدة
   const headers = ['#', 'التاريخ', 'اليوم', 'وقت الدخول', 'وقت الخروج', 'مدة العمل', 'ساعات عادية', 'ساعات إضافية', 'الراتب العادي', 'راتب الإضافي', 'الإجمالي', 'عدد المهام'];
   summaryAOA.push(headers);
 
@@ -1327,29 +1332,18 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
     ]);
   });
 
-  // صف الإجمالي
   summaryAOA.push([]);
   summaryAOA.push(['', '', '', '', 'الإجمالي', formatDuration(totalMin), totalRegHrs.toFixed(1)+'س', totalOTHrs.toFixed(1)+'س', totalRegPay.toFixed(0)+' ج', totalOTPay.toFixed(0)+' ج', (totalRegPay+totalOTPay).toFixed(0)+' ج', totalTasksCount]);
 
   const ws1 = XLSX.utils.aoa_to_sheet(summaryAOA);
-
-  // دمج خلايا العنوان
   ws1['!merges'] = [
     { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } },
     { s: { r: 1, c: 0 }, e: { r: 1, c: 11 } },
     { s: { r: 2, c: 0 }, e: { r: 2, c: 11 } }
   ];
-
-  // عرض الأعمدة
-  ws1['!cols'] = [
-    { wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
-    { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }
-  ];
-
-  // ارتفاع الصفوف
+  ws1['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }];
   ws1['!rows'] = [{ hpt: 32 }, { hpt: 22 }, { hpt: 22 }, {}, { hpt: 28 }];
 
-  // الأنماط
   const titleStyle = { font: { name: 'Tajawal', bold: true, sz: 16, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '10B981' } }, alignment: { horizontal: 'center', vertical: 'center' } };
   const subtitleStyle = { font: { name: 'Tajawal', sz: 11, color: { rgb: 'CBD5E1' } }, fill: { fgColor: { rgb: '1E293B' } }, alignment: { horizontal: 'center', vertical: 'center' } };
   const headerStyle = { font: { name: 'Tajawal', bold: true, sz: 12, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '0F766E' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: { top: { style: 'thin', color: { rgb: 'FFFFFF' } }, bottom: { style: 'thin', color: { rgb: 'FFFFFF' } }, left: { style: 'thin', color: { rgb: 'FFFFFF' } }, right: { style: 'thin', color: { rgb: 'FFFFFF' } } } };
@@ -1357,7 +1351,6 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
   const altDataStyle = { ...dataStyle, fill: { fgColor: { rgb: 'F0FDF4' } } };
   const totalStyle = { font: { name: 'Tajawal', bold: true, sz: 12, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '059669' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: { top: { style: 'medium', color: { rgb: '10B981' } }, bottom: { style: 'medium', color: { rgb: '10B981' } }, left: { style: 'thin', color: { rgb: '10B981' } }, right: { style: 'thin', color: { rgb: '10B981' } } } };
 
-  // تطبيق الأنماط
   ['A1','B1','C1','D1','E1','F1','G1','H1','I1','J1','K1','L1'].forEach(c => { if (ws1[c]) ws1[c].s = titleStyle; });
   ['A2','B2','C2','D2','E2','F2','G2','H2','I2','J2','K2','L2'].forEach(c => { if (ws1[c]) ws1[c].s = subtitleStyle; });
   ['A3','B3','C3','D3','E3','F3','G3','H3','I3','J3','K3','L3'].forEach(c => { if (ws1[c]) ws1[c].s = subtitleStyle; });
@@ -1367,7 +1360,6 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
     const cellRef = XLSX.utils.encode_cell({ r: headerRow, c });
     if (ws1[cellRef]) ws1[cellRef].s = headerStyle;
   }
-
   const dataStartRow = 5;
   const dataEndRow = dataStartRow + records.length - 1;
   for (let r = dataStartRow; r <= dataEndRow; r++) {
@@ -1376,7 +1368,6 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
       if (ws1[cellRef]) ws1[cellRef].s = (r - dataStartRow) % 2 === 0 ? dataStyle : altDataStyle;
     }
   }
-
   const totalRowIdx = dataEndRow + 2;
   for (let c = 0; c < 12; c++) {
     const cellRef = XLSX.utils.encode_cell({ r: totalRowIdx, c });
@@ -1386,10 +1377,12 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
   XLSX.utils.book_append_sheet(wb, ws1, 'ملخص البصمات');
 
   // ====== الورقة 2: تفاصيل المهام ======
+  // تعديل: دمج المهام في خلية واحدة مفصولة بـ | أو وضع كل مهمة في صف مستقل؟
+  // الأفضل وضع كل "جلسة عمل" في صف، ودمج المهام بداخلها بفاصل |
   const tasksAOA = [];
   tasksAOA.push([`تفاصيل المهام - ${state.name || 'موظف'}`]);
   tasksAOA.push([]);
-  const taskHeaders = ['#', 'التاريخ', 'اليوم', 'اسم المهمة', 'وقت البداية', 'وقت النهاية', 'المدة'];
+  const taskHeaders = ['#', 'التاريخ', 'اليوم', 'اسماء المهام', 'وقت البداية', 'وقت النهاية', 'المدة'];
   tasksAOA.push(taskHeaders);
 
   let taskIdx = 0;
@@ -1402,6 +1395,7 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
       const te = formatDateArabic(t.endTime);
       const tdur = formatDuration(t.duration || 0);
       totalTaskMin += t.duration || 0;
+      // الاسم بالفعل مفصول بـ | إذا تم اختيار عدة مهام
       tasksAOA.push([taskIdx, ci.fullDate, ci.dayName, t.name, ts.timeShort, te.timeShort, tdur]);
     });
   });
@@ -1413,7 +1407,7 @@ function exportToExcel(records, filename = 'بصمة_السجلات') {
 
   const ws2 = XLSX.utils.aoa_to_sheet(tasksAOA);
   ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
-  ws2['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
+  ws2['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 35 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
   ws2['!rows'] = [{ hpt: 32 }, {}, { hpt: 28 }];
 
   ['A1','B1','C1','D1','E1','F1','G1'].forEach(c => { if (ws2[c]) ws2[c].s = titleStyle; });
