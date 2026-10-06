@@ -8,13 +8,12 @@
 <script src="https://cdn.tailwindcss.com"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
-<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 <style>
   * { font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
   html, body { background: #070b16; color: #e2e8f0; min-height: 100vh; overflow-x: hidden; }
   body { padding-bottom: 100px; }
 
-  /* خلفية متحركة */
   .bg-decor {
     position: fixed; inset: 0; z-index: -2; pointer-events: none;
     background:
@@ -32,12 +31,10 @@
     mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
   }
 
-  /* الصفحات */
   .page { display: none; animation: fadeUp 0.5s cubic-bezier(.16,1,.3,1); }
   .page.active { display: block; }
   @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
 
-  /* زجاجي */
   .glass {
     background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
     backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -50,7 +47,6 @@
     border-radius: 18px;
   }
 
-  /* شريط التنقل السفلي */
   .bottom-nav {
     position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
     background: rgba(10,15,28,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
@@ -76,7 +72,6 @@
   }
   .nav-item:not(.active):hover { color: #94a3b8; }
 
-  /* أزرار */
   .btn-primary {
     background: linear-gradient(135deg, #10b981 0%, #059669 100%);
     color: white; font-weight: 700; padding: 16px 28px; border-radius: 18px;
@@ -105,7 +100,15 @@
   }
   .btn-ghost:hover { background: rgba(255,255,255,0.08); }
 
-  /* حقول الإدخال */
+  .btn-amber {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    color: white; font-weight: 700; padding: 16px 28px; border-radius: 18px;
+    transition: all .3s; box-shadow: 0 10px 30px -8px rgba(245,158,11,0.5);
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    font-size: 16px;
+  }
+  .btn-amber:hover { transform: translateY(-2px); }
+
   .input-field {
     background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
     border-radius: 16px; padding: 16px 18px; color: #e2e8f0; width: 100%;
@@ -114,7 +117,6 @@
   .input-field:focus { outline: none; border-color: #10b981; background: rgba(16,185,129,0.05); box-shadow: 0 0 0 4px rgba(16,185,129,0.1); }
   .input-field::placeholder { color: #64748b; }
 
-  /* نبض الدخول */
   @keyframes pulseRing {
     0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5), 0 10px 30px -8px rgba(16,185,129,0.5); }
     70% { box-shadow: 0 0 0 22px rgba(16,185,129,0), 0 10px 30px -8px rgba(16,185,129,0.5); }
@@ -129,7 +131,13 @@
   }
   .pulse-red { animation: pulseRingRed 2s infinite; }
 
-  /* Toast */
+  @keyframes pulseRingAmber {
+    0% { box-shadow: 0 0 0 0 rgba(245,158,11,0.5), 0 10px 30px -8px rgba(245,158,11,0.5); }
+    70% { box-shadow: 0 0 0 22px rgba(245,158,11,0), 0 10px 30px -8px rgba(245,158,11,0.5); }
+    100% { box-shadow: 0 0 0 0 rgba(245,158,11,0), 0 10px 30px -8px rgba(245,158,11,0.5); }
+  }
+  .pulse-amber { animation: pulseRingAmber 2s infinite; }
+
   .toast-wrap { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 90%; max-width: 420px; pointer-events: none; }
   .toast {
     background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); color: white;
@@ -148,7 +156,6 @@
   @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
   @keyframes toastOut { to { opacity: 0; transform: translateY(-20px) scale(0.95); } }
 
-  /* Modal */
   .modal-overlay {
     position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
     z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;
@@ -160,10 +167,11 @@
     background: linear-gradient(145deg, #131c30, #0d1424); border: 1px solid rgba(255,255,255,0.08);
     border-radius: 24px; padding: 28px; max-width: 400px; width: 100%;
     animation: modalIn .4s cubic-bezier(.16,1,.3,1);
+    max-height: 85vh; overflow-y: auto;
   }
+  .modal-box-lg { max-width: 520px; }
   @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
 
-  /* بطاقة إحصائية */
   .stat-card {
     background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
     border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 18px;
@@ -175,17 +183,14 @@
     opacity: 0.5;
   }
 
-  /* شريط التمرير */
   ::-webkit-scrollbar { width: 8px; height: 8px; }
   ::-webkit-scrollbar-track { background: transparent; }
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
   ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
 
-  /* جدول */
   .table-row { transition: all .2s; }
   .table-row:hover { background: rgba(16,185,129,0.05); }
 
-  /* مهمة chip */
   .task-chip {
     background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
     padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: all .2s;
@@ -196,15 +201,8 @@
     background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05));
     border-color: #10b981; color: #34d399;
   }
+  .task-chip:disabled { opacity: 0.4; cursor: not-allowed; }
 
-  /* مهمة اليوم */
-  .today-task {
-    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
-    padding: 12px 14px; border-radius: 14px; display: flex; align-items: center; gap: 10px;
-    animation: fadeUp .3s;
-  }
-
-  /* سهم Dropdown */
   select {
     appearance: none; -webkit-appearance: none; -moz-appearance: none;
     background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
@@ -216,52 +214,85 @@
     background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #fbbf24 100%);
     -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
   }
+  .gradient-amber {
+    background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
 
   .number-display { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
 
-  /* تحريك لوغو */
   @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
   .float { animation: float 3s ease-in-out infinite; }
-
   @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   .rotate-slow { animation: rotate 20s linear infinite; }
 
-  /* تنبيه الحضور */
   .live-indicator {
     width: 10px; height: 10px; background: #10b981; border-radius: 50%;
     animation: livePulse 1.5s ease-in-out infinite;
+  }
+  .live-indicator-amber {
+    width: 10px; height: 10px; background: #f59e0b; border-radius: 50%;
+    animation: livePulseAmber 1.5s ease-in-out infinite;
   }
   @keyframes livePulse {
     0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
     50% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
   }
+  @keyframes livePulseAmber {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245,158,11,0.6); }
+    50% { box-shadow: 0 0 0 8px rgba(245,158,11,0); }
+  }
 
-  /* مهمة في الجدول */
   .task-tag {
     background: rgba(16,185,129,0.1); color: #34d399;
     padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
     display: inline-block; margin: 2px;
   }
 
-  /* ترانزشن للشريط السفلي */
   @media (min-width: 640px) {
     .bottom-nav { margin-bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); }
   }
 
-  /* تحسين العرض على الديسكتوب */
   .app-container { max-width: 640px; margin: 0 auto; padding: 0 16px; }
-  @media (min-width: 1024px) {
-    .app-container { max-width: 720px; }
-  }
+  @media (min-width: 1024px) { .app-container { max-width: 720px; } }
 
-  /* تأثير hover للبطاقات */
   .hover-lift { transition: all .3s cubic-bezier(.16,1,.3,1); }
   .hover-lift:hover { transform: translateY(-3px); }
 
-  /* إخفاء عناصر التحكم */
   input[type="time"]::-webkit-calendar-picker-indicator,
-  input[type="date"]::-webkit-calendar-picker-indicator {
+  input[type="date"]::-webkit-calendar-picker-indicator,
+  input[type="number"]::-webkit-outer-spin-button,
+  input[type="number"]::-webkit-inner-spin-button {
     filter: invert(0.6); cursor: pointer;
+  }
+  input[type="number"] { -moz-appearance: textfield; }
+
+  .active-task-card {
+    background: linear-gradient(135deg, rgba(245,158,11,0.08), rgba(245,158,11,0.02));
+    border: 1px solid rgba(245,158,11,0.2);
+    border-radius: 18px; padding: 18px;
+  }
+
+  .completed-task {
+    background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);
+    padding: 12px; border-radius: 14px;
+  }
+
+  .salary-badge {
+    background: linear-gradient(135deg, rgba(16,185,129,0.15), rgba(16,185,129,0.05));
+    border: 1px solid rgba(16,185,129,0.2);
+    padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; color: #34d399;
+  }
+  .overtime-badge {
+    background: linear-gradient(135deg, rgba(245,158,11,0.15), rgba(245,158,11,0.05));
+    border: 1px solid rgba(245,158,11,0.2);
+    padding: 4px 10px; border-radius: 10px; font-size: 11px; font-weight: 700; color: #fbbf24;
+  }
+
+  .details-task-row {
+    display: grid; grid-template-columns: 1fr auto auto auto; gap: 8px; align-items: center;
+    padding: 10px 12px; border-radius: 12px; background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04); font-size: 12px;
   }
 </style>
 </head>
@@ -270,7 +301,6 @@
 <div class="bg-decor"></div>
 <div class="bg-grid"></div>
 
-<!-- حاوية الإشعارات -->
 <div class="toast-wrap" id="toastWrap"></div>
 
 <!-- Modal للتأكيد -->
@@ -293,6 +323,28 @@
   </div>
 </div>
 
+<!-- Modal لتفاصيل اليوم -->
+<div class="modal-overlay" id="detailsModal">
+  <div class="modal-box modal-box-lg">
+    <div class="flex items-center justify-between mb-5">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-emerald-500/15 text-emerald-400 text-lg">
+          <i class="fa-solid fa-clipboard-list"></i>
+        </div>
+        <div>
+          <h3 id="detailsDate" class="text-lg font-bold">—</h3>
+          <p class="text-xs text-slate-400">تفاصيل يوم العمل</p>
+        </div>
+      </div>
+      <button onclick="closeDetailsModal()" class="w-9 h-9 rounded-xl glass-soft flex items-center justify-center text-slate-400 hover:text-red-400 transition">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    <div id="detailsContent"></div>
+    <button onclick="closeDetailsModal()" class="btn-ghost w-full mt-5">إغلاق</button>
+  </div>
+</div>
+
 <!-- ============ الصفحة 1: Onboarding ============ -->
 <section class="page active" id="page-onboarding">
   <div class="app-container min-h-screen flex flex-col justify-center py-10">
@@ -306,26 +358,17 @@
         نظام تسجيل حضور وانصراف الموظفين وحفظ المهام اليومية بشكل احترافي وآمن
       </p>
     </div>
-
     <div class="glass p-7">
       <label class="block text-sm font-bold text-slate-300 mb-3">
         <i class="fa-solid fa-user text-emerald-400 ml-1"></i>
         أدخل اسمك للبدء
       </label>
-      <input
-        type="text"
-        id="nameInput"
-        class="input-field mb-5"
-        placeholder="مثال: محمد أحمد"
-        maxlength="40"
-        autocomplete="off"
-      >
+      <input type="text" id="nameInput" class="input-field mb-5" placeholder="مثال: محمد أحمد" maxlength="40" autocomplete="off">
       <button id="startBtn" class="btn-primary">
         <i class="fa-solid fa-arrow-left"></i>
         ابدأ الآن
       </button>
     </div>
-
     <div class="mt-8 grid grid-cols-3 gap-3">
       <div class="text-center p-3 glass-soft">
         <i class="fa-solid fa-shield-halved text-emerald-400 text-xl mb-1"></i>
@@ -340,18 +383,13 @@
         <p class="text-xs text-slate-400">تصدير Excel</p>
       </div>
     </div>
-
-    <p class="text-center text-xs text-slate-500 mt-8">
-      سيتم حفظ بياناتك على جهازك فقط • لا يتم رفعها لأي خادم
-    </p>
+    <p class="text-center text-xs text-slate-500 mt-8">سيتم حفظ بياناتك على جهازك فقط • لا يتم رفعها لأي خادم</p>
   </div>
 </section>
 
 <!-- ============ الصفحة 2: الرئيسية ============ -->
 <section class="page" id="page-home">
   <div class="app-container py-6">
-
-    <!-- رأس الصفحة -->
     <header class="flex items-center justify-between mb-6">
       <div>
         <p class="text-xs text-slate-400 mb-1">مرحباً بعودتك 👋</p>
@@ -362,7 +400,6 @@
       </button>
     </header>
 
-    <!-- بطاقة الوقت والتاريخ -->
     <div class="glass p-5 mb-5">
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
@@ -380,50 +417,54 @@
       </div>
     </div>
 
-    <!-- بطاقة الحالة -->
-    <div id="statusCard" class="glass p-6 mb-5 text-center">
-      <!-- يتم ملؤها ديناميكياً -->
-    </div>
+    <div id="statusCard" class="glass p-6 mb-5 text-center"></div>
 
-    <!-- بطاقة المهام -->
+    <!-- قسم المهام -->
     <div id="taskSection" class="glass p-5 mb-5" style="display:none;">
       <div class="flex items-center justify-between mb-4">
         <h3 class="font-bold flex items-center gap-2">
           <i class="fa-solid fa-list-check text-emerald-400"></i>
-          مهام اليوم
+          مهام العمل
         </h3>
-        <span id="todayTaskCount" class="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-1 rounded-lg font-bold">0</span>
+        <span id="todayTaskCount" class="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-1 rounded-lg font-bold">0 مكتملة</span>
       </div>
 
-      <div class="mb-4">
-        <p class="text-xs text-slate-400 mb-2">اختر المهمة التي قمت بها:</p>
-        <div id="taskChips" class="flex flex-wrap gap-2"></div>
+      <!-- المهمة النشطة -->
+      <div id="activeTaskArea" style="display:none;"></div>
+
+      <!-- اختيار مهمة جديدة -->
+      <div id="taskSelectArea">
+        <p class="text-xs text-slate-400 mb-2">اختر مهمة لبدء العمل عليها:</p>
+        <div id="taskChips" class="flex flex-wrap gap-2 mb-4"></div>
+        <button id="startTaskBtn" class="btn-amber" disabled>
+          <i class="fa-solid fa-play"></i>
+          بدء المهمة
+        </button>
       </div>
 
-      <button id="addTaskBtn" class="btn-ghost w-full" disabled>
-        <i class="fa-solid fa-plus"></i>
-        إضافة مهمة للسجل
-      </button>
-
-      <div id="todayTasksList" class="mt-4 space-y-2"></div>
+      <!-- المهام المكتملة -->
+      <div id="completedTasksArea" class="mt-4" style="display:none;">
+        <div class="flex items-center gap-2 mb-2">
+          <i class="fa-solid fa-check-double text-emerald-400 text-sm"></i>
+          <p class="text-xs font-bold text-slate-300">المهام المكتملة اليوم</p>
+        </div>
+        <div id="completedTasksList" class="space-y-2"></div>
+      </div>
     </div>
 
-    <!-- زر البصمة الرئيسي -->
     <button id="mainActionBtn" class="btn-primary pulse-green mb-4">
       <i class="fa-solid fa-fingerprint"></i>
       <span id="mainActionText">تسجيل بصمة دخول</span>
     </button>
-
   </div>
 </section>
 
 <!-- ============ الصفحة 3: السجلات ============ -->
 <section class="page" id="page-records">
   <div class="app-container py-6">
-
     <header class="mb-6">
       <h2 class="text-2xl font-black mb-1">السجلات والإحصائيات</h2>
-      <p class="text-sm text-slate-400">عرض جميع بصماتك وتفاصيل العمل</p>
+      <p class="text-sm text-slate-400">عرض جميع بصماتك وتفاصيل العمل والرواتب</p>
     </header>
 
     <!-- الإحصائيات -->
@@ -436,7 +477,6 @@
         <p id="totalHours" class="text-2xl font-black number-display">0</p>
         <p class="text-xs text-slate-500">ساعة عمل</p>
       </div>
-
       <div class="stat-card" style="--accent-color: rgba(245,158,11,0.4);">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-slate-400 font-medium">أيام العمل</span>
@@ -445,7 +485,6 @@
         <p id="totalDays" class="text-2xl font-black number-display">0</p>
         <p class="text-xs text-slate-500">يوم</p>
       </div>
-
       <div class="stat-card" style="--accent-color: rgba(59,130,246,0.4);">
         <div class="flex items-center justify-between mb-2">
           <span class="text-xs text-slate-400 font-medium">إجمالي المهام</span>
@@ -454,14 +493,13 @@
         <p id="totalTasks" class="text-2xl font-black number-display">0</p>
         <p class="text-xs text-slate-500">مهمة مكتملة</p>
       </div>
-
       <div class="stat-card" style="--accent-color: rgba(168,85,247,0.4);">
         <div class="flex items-center justify-between mb-2">
-          <span class="text-xs text-slate-400 font-medium">متوسط اليوم</span>
-          <i class="fa-solid fa-chart-line text-purple-400"></i>
+          <span class="text-xs text-slate-400 font-medium">إجمالي الراتب</span>
+          <i class="fa-solid fa-money-bill-wave text-purple-400"></i>
         </div>
-        <p id="avgHours" class="text-2xl font-black number-display">0</p>
-        <p class="text-xs text-slate-500">ساعة / يوم</p>
+        <p id="totalSalary" class="text-2xl font-black number-display">0</p>
+        <p class="text-xs text-slate-500">جنيه</p>
       </div>
     </div>
 
@@ -477,7 +515,6 @@
           تصدير
         </button>
       </div>
-
       <div class="grid grid-cols-2 gap-3">
         <div>
           <label class="text-xs text-slate-400 block mb-1">الشهر</label>
@@ -488,7 +525,6 @@
           <select id="filterDay" class="input-field text-sm py-3"></select>
         </div>
       </div>
-
       <div class="flex gap-2 mt-3">
         <button id="clearFiltersBtn" class="btn-ghost flex-1 text-xs py-2">
           <i class="fa-solid fa-rotate-left"></i>
@@ -507,11 +543,7 @@
         <h3 class="font-bold text-sm">سجل البصمات</h3>
         <span id="recordsCount" class="text-xs text-slate-400">0 سجل</span>
       </div>
-
-      <div id="recordsList" class="divide-y divide-white/5">
-        <!-- يتم ملؤها ديناميكياً -->
-      </div>
-
+      <div id="recordsList" class="divide-y divide-white/5"></div>
       <div id="emptyState" class="p-10 text-center">
         <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 mb-3">
           <i class="fa-solid fa-folder-open text-2xl text-slate-500"></i>
@@ -520,17 +552,15 @@
         <p class="text-xs text-slate-500">ابدأ بتسجيل بصمة دخول من الصفحة الرئيسية</p>
       </div>
     </div>
-
   </div>
 </section>
 
 <!-- ============ الصفحة 4: الإعدادات ============ -->
 <section class="page" id="page-settings">
   <div class="app-container py-6">
-
     <header class="mb-6">
       <h2 class="text-2xl font-black mb-1">الإعدادات</h2>
-      <p class="text-sm text-slate-400">إدارة حسابك والمهام والبيانات</p>
+      <p class="text-sm text-slate-400">إدارة حسابك والمهام والرواتب والبيانات</p>
     </header>
 
     <!-- تعديل الاسم -->
@@ -547,6 +577,41 @@
       </div>
     </div>
 
+    <!-- إعدادات الراتب -->
+    <div class="glass p-5 mb-5">
+      <h3 class="font-bold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-money-bill-wave text-purple-400"></i>
+        إعدادات الراتب
+      </h3>
+      <p class="text-xs text-slate-400 mb-4">يتم حساب الراتب بناءً على هذه القيم (الساعات الإضافية = ×1.5)</p>
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">الراتب بالساعة (جنيه)</label>
+          <div class="flex gap-2">
+            <input type="number" id="hourlyRateInput" class="input-field text-sm" placeholder="مثال: 50" min="0" step="0.5">
+            <button id="saveRateBtn" class="px-5 rounded-2xl bg-purple-500/15 text-purple-400 font-bold hover:bg-purple-500/25 transition whitespace-nowrap">
+              <i class="fa-solid fa-check"></i>
+            </button>
+          </div>
+        </div>
+        <div class="glass-soft p-3 flex items-center justify-between">
+          <span class="text-xs text-slate-400">ساعات العمل القياسية</span>
+          <span class="font-bold text-slate-300">8 ساعات / يوم</span>
+        </div>
+        <div class="glass-soft p-3 flex items-center justify-between">
+          <span class="text-xs text-slate-400">معدل الإضافي (Overtime)</span>
+          <span class="font-bold text-amber-400">× 1.5</span>
+        </div>
+        <div class="glass-soft p-3">
+          <p class="text-xs text-slate-400 mb-2">مثال: إذا كنت تتقاضى 50 ج/ساعة:</p>
+          <div class="grid grid-cols-2 gap-2 text-xs">
+            <div class="flex items-center gap-1"><i class="fa-solid fa-check text-emerald-400"></i> 8 ساعات = 400 ج</div>
+            <div class="flex items-center gap-1"><i class="fa-solid fa-plus text-amber-400"></i> ساعة إضافية = 75 ج</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- إدارة المهام -->
     <div class="glass p-5 mb-5">
       <h3 class="font-bold mb-4 flex items-center gap-2">
@@ -554,14 +619,12 @@
         إدارة المهام
       </h3>
       <p class="text-xs text-slate-400 mb-3">المهام المتاحة للاختيار عند تسجيل البصمة</p>
-
       <div class="flex gap-2 mb-4">
         <input type="text" id="newTaskInput" class="input-field text-sm" placeholder="أضف مهمة جديدة..." maxlength="30">
         <button id="addTaskToListBtn" class="px-5 rounded-2xl bg-amber-500/15 text-amber-400 font-bold hover:bg-amber-500/25 transition whitespace-nowrap">
           <i class="fa-solid fa-plus"></i>
         </button>
       </div>
-
       <div id="tasksManagerList" class="space-y-2"></div>
     </div>
 
@@ -571,20 +634,17 @@
         <i class="fa-solid fa-database text-blue-400"></i>
         إدارة البيانات
       </h3>
-
       <div class="space-y-3">
         <button id="exportAllBtn" class="btn-ghost w-full justify-start text-right">
           <i class="fa-solid fa-file-excel text-emerald-400"></i>
           <span class="flex-1">تصدير كل البيانات (Excel)</span>
           <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
         </button>
-
         <button id="clearRecordsBtn" class="btn-ghost w-full justify-start text-right">
           <i class="fa-solid fa-broom text-amber-400"></i>
           <span class="flex-1">مسح سجلات البصمات فقط</span>
           <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
         </button>
-
         <button id="clearAllBtn" class="btn-ghost w-full justify-start text-right text-red-400 hover:bg-red-500/10">
           <i class="fa-solid fa-trash-can"></i>
           <span class="flex-1">مسح كل البيانات (إعادة تعيين)</span>
@@ -593,16 +653,14 @@
       </div>
     </div>
 
-    <!-- معلومات التطبيق -->
     <div class="text-center py-6">
       <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-amber-500/10 border border-white/5 mb-3">
         <i class="fa-solid fa-fingerprint text-2xl gradient-text"></i>
       </div>
       <p class="font-bold text-sm">تطبيق بصمة</p>
-      <p class="text-xs text-slate-500 mt-1">الإصدار 1.0.0</p>
+      <p class="text-xs text-slate-500 mt-1">الإصدار 2.0.0</p>
       <p class="text-xs text-slate-600 mt-3">جميع البيانات محفوظة محلياً على جهازك</p>
     </div>
-
   </div>
 </section>
 
@@ -629,24 +687,19 @@ const STORAGE_KEYS = {
   tasks: 'basma_tasks_list',
   records: 'basma_attendance_records',
   session: 'basma_current_session',
-  todayTasks: 'basma_today_tasks'
+  hourlyRate: 'basma_hourly_rate'
 };
 
-const DEFAULT_TASKS = [
-  'تطوير برمجي',
-  'اجتماع فريق',
-  'كتابة تقارير',
-  'مراجعة أكواد',
-  'دعم فني',
-  'تخطيط وتحليل'
-];
+const DEFAULT_TASKS = ['تطوير برمجي', 'اجتماع فريق', 'كتابة تقارير', 'مراجعة أكواد', 'دعم فني', 'تخطيط وتحليل'];
+const STANDARD_HOURS = 8;
+const OVERTIME_MULTIPLIER = 1.5;
 
 const state = {
   name: localStorage.getItem(STORAGE_KEYS.name) || '',
   tasks: JSON.parse(localStorage.getItem(STORAGE_KEYS.tasks) || 'null') || [...DEFAULT_TASKS],
   records: JSON.parse(localStorage.getItem(STORAGE_KEYS.records) || '[]'),
   session: JSON.parse(localStorage.getItem(STORAGE_KEYS.session) || 'null'),
-  todayTasks: JSON.parse(localStorage.getItem(STORAGE_KEYS.todayTasks) || '[]'),
+  hourlyRate: parseFloat(localStorage.getItem(STORAGE_KEYS.hourlyRate)) || 0,
   selectedTask: null,
   liveTimerInterval: null,
   clockInterval: null,
@@ -655,9 +708,7 @@ const state = {
 };
 
 /* =============== أدوات مساعدة =============== */
-function save(key, data) {
-  localStorage.setItem(key, JSON.stringify(data));
-}
+function save(key, data) { localStorage.setItem(key, JSON.stringify(data)); }
 
 function formatDateArabic(date) {
   const d = new Date(date);
@@ -688,6 +739,25 @@ function formatDuration(minutes) {
   return `${h}س ${m}د`;
 }
 
+function formatDurationPrecise(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  if (h === 0) return `${m} دقيقة`;
+  if (m === 0) return `${h} ساعة`;
+  return `${h} ساعة و ${m} دقيقة`;
+}
+
+function calcSalary(totalMinutes) {
+  const totalHours = totalMinutes / 60;
+  const rate = state.hourlyRate || 0;
+  if (rate === 0) return { regularHours: 0, overtimeHours: 0, regularPay: 0, overtimePay: 0, totalPay: 0, hasRate: false };
+  const regularHours = Math.min(totalHours, STANDARD_HOURS);
+  const overtimeHours = Math.max(0, totalHours - STANDARD_HOURS);
+  const regularPay = regularHours * rate;
+  const overtimePay = overtimeHours * rate * OVERTIME_MULTIPLIER;
+  return { regularHours, overtimeHours, regularPay, overtimePay, totalPay: regularPay + overtimePay, hasRate: true };
+}
+
 /* =============== الإشعارات =============== */
 function toast(message, type = 'info', duration = 3000) {
   const wrap = document.getElementById('toastWrap');
@@ -697,10 +767,7 @@ function toast(message, type = 'info', duration = 3000) {
   const colors = { success: 'text-emerald-400', error: 'text-red-400', warning: 'text-amber-400', info: 'text-blue-400' };
   el.innerHTML = `<i class="fa-solid ${icons[type]} ${colors[type]} text-lg"></i><span>${message}</span>`;
   wrap.appendChild(el);
-  setTimeout(() => {
-    el.classList.add('out');
-    setTimeout(() => el.remove(), 300);
-  }, duration);
+  setTimeout(() => { el.classList.add('out'); setTimeout(() => el.remove(), 300); }, duration);
 }
 
 /* =============== Modal =============== */
@@ -710,7 +777,6 @@ function showConfirm({ title, desc, msg, confirmText, type = 'warning', onConfir
   document.getElementById('modalDesc').textContent = desc || '';
   document.getElementById('modalMsg').textContent = msg || '';
   document.getElementById('modalConfirm').textContent = confirmText || 'تأكيد';
-
   const iconEl = document.getElementById('modalIcon');
   const btn = document.getElementById('modalConfirm');
   const config = {
@@ -718,13 +784,10 @@ function showConfirm({ title, desc, msg, confirmText, type = 'warning', onConfir
     danger: { icon: 'fa-triangle-exclamation', bg: 'bg-red-500/15', text: 'text-red-400', btn: 'from-red-500 to-rose-600', shadow: 'shadow-red-500/30' },
     info: { icon: 'fa-circle-info', bg: 'bg-blue-500/15', text: 'text-blue-400', btn: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/30' }
   }[type];
-
   iconEl.className = `w-12 h-12 rounded-2xl flex items-center justify-center ${config.bg} ${config.text} text-xl`;
   iconEl.innerHTML = `<i class="fa-solid ${config.icon}"></i>`;
   btn.className = `flex-1 px-5 py-3 rounded-2xl font-bold text-white bg-gradient-to-br ${config.btn} shadow-lg ${config.shadow}`;
-
   overlay.classList.add('active');
-
   const confirmBtn = document.getElementById('modalConfirm');
   const cancelBtn = document.getElementById('modalCancel');
   const close = () => overlay.classList.remove('active');
@@ -733,25 +796,17 @@ function showConfirm({ title, desc, msg, confirmText, type = 'warning', onConfir
   overlay.onclick = (e) => { if (e.target === overlay) close(); };
 }
 
+function closeDetailsModal() { document.getElementById('detailsModal').classList.remove('active'); }
+
 /* =============== التنقل =============== */
 function navigateTo(page) {
-  // إخفاء كل الصفحات
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-  // إظهار الصفحة المطلوبة
   const target = document.getElementById(`page-${page}`);
   if (target) target.classList.add('active');
-
-  // تحديث الشريط السفلي
-  document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.page === page);
-  });
-
-  // تحديث المحتوى حسب الصفحة
+  document.querySelectorAll('.nav-item').forEach(item => item.classList.toggle('active', item.dataset.page === page));
   if (page === 'home') renderHome();
   if (page === 'records') renderRecords();
   if (page === 'settings') renderSettings();
-
-  // تمرير لأعلى
   window.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
@@ -759,36 +814,18 @@ function navigateTo(page) {
 function initOnboarding() {
   const nameInput = document.getElementById('nameInput');
   const startBtn = document.getElementById('startBtn');
-
-  // إذا الاسم موجود، انتقل مباشرة للرئيسية
-  if (state.name) {
-    enterApp();
-    return;
-  }
-
+  if (state.name) { enterApp(); return; }
   nameInput.focus();
-  nameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter' && nameInput.value.trim()) enterApp();
-  });
-
+  nameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && nameInput.value.trim()) enterApp(); });
   startBtn.onclick = () => {
     const name = nameInput.value.trim();
-    if (!name) {
-      toast('الرجاء إدخال اسمك أولاً', 'warning');
-      nameInput.focus();
-      return;
-    }
+    if (!name) { toast('الرجاء إدخال اسمك أولاً', 'warning'); nameInput.focus(); return; }
     enterApp(name);
   };
 }
 
 function enterApp(name) {
-  if (name) {
-    state.name = name;
-    save(STORAGE_KEYS.name, name);
-    toast(`أهلاً بك ${name}! 🎉`, 'success');
-  }
-  // إخفاء صفحة الـ onboarding وإظهار التطبيق
+  if (name) { state.name = name; save(STORAGE_KEYS.name, name); toast(`أهلاً بك ${name}! 🎉`, 'success'); }
   document.getElementById('page-onboarding').classList.remove('active');
   document.getElementById('bottomNav').style.display = 'flex';
   navigateTo('home');
@@ -819,31 +856,25 @@ function renderHome() {
 function renderStatusCard() {
   const card = document.getElementById('statusCard');
   if (state.session) {
-    // الموظف داخل
     const start = new Date(state.session.checkIn);
     card.innerHTML = `
       <div class="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold mb-3">
-        <span class="live-indicator"></span>
-        حالياً في العمل
+        <span class="live-indicator"></span> حالياً في العمل
       </div>
       <p class="text-sm text-slate-400 mb-1">مدة العمل حتى الآن</p>
       <p id="liveTimer" class="text-4xl font-black number-display gradient-text mb-3">00:00:00</p>
       <div class="flex items-center justify-center gap-4 text-xs text-slate-400">
         <span><i class="fa-solid fa-sign-in-alt text-emerald-400 ml-1"></i> دخول: ${formatDateArabic(start).timeShort}</span>
-      </div>
-    `;
+      </div>`;
     startLiveTimer();
   } else {
-    // الموظف خارج
     stopLiveTimer();
     card.innerHTML = `
       <div class="inline-flex items-center gap-2 bg-slate-500/15 text-slate-400 px-3 py-1 rounded-full text-xs font-bold mb-3">
-        <i class="fa-solid fa-pause"></i>
-        خارج العمل
+        <i class="fa-solid fa-pause"></i> خارج العمل
       </div>
       <p class="text-3xl font-black text-slate-300 mb-2">لم تبدأ بعد</p>
-      <p class="text-sm text-slate-400">اضغط على زر البصمة بالأسفل لتسجيل دخولك</p>
-    `;
+      <p class="text-sm text-slate-400">اضغط على زر البصمة بالأسفل لتسجيل دخولك</p>`;
   }
 }
 
@@ -857,114 +888,135 @@ function startLiveTimer() {
     const s = Math.floor((elapsed % 60000) / 1000);
     const el = document.getElementById('liveTimer');
     if (el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    const taskEl = document.getElementById('activeTaskTimer');
+    if (taskEl && state.session.activeTask) {
+      const tElapsed = Date.now() - new Date(state.session.activeTask.startTime).getTime();
+      const th = Math.floor(tElapsed / 3600000);
+      const tm = Math.floor((tElapsed % 3600000) / 60000);
+      const ts = Math.floor((tElapsed % 60000) / 1000);
+      taskEl.textContent = `${String(th).padStart(2,'0')}:${String(tm).padStart(2,'0')}:${String(ts).padStart(2,'0')}`;
+    }
   };
   update();
   state.liveTimerInterval = setInterval(update, 1000);
 }
 
-function stopLiveTimer() {
-  if (state.liveTimerInterval) {
-    clearInterval(state.liveTimerInterval);
-    state.liveTimerInterval = null;
-  }
-}
+function stopLiveTimer() { if (state.liveTimerInterval) { clearInterval(state.liveTimerInterval); state.liveTimerInterval = null; } }
 
 function renderTaskSection() {
   const section = document.getElementById('taskSection');
-  if (!state.session) {
-    section.style.display = 'none';
-    return;
-  }
+  if (!state.session) { section.style.display = 'none'; return; }
   section.style.display = 'block';
 
-  // عرض chips المهام
+  const hasActive = !!state.session.activeTask;
+  document.getElementById('taskSelectArea').style.display = hasActive ? 'none' : 'block';
+  document.getElementById('activeTaskArea').style.display = hasActive ? 'block' : 'none';
+
+  if (hasActive) renderActiveTask();
+  else renderTaskChips();
+
+  renderCompletedTasks();
+}
+
+function renderTaskChips() {
   const chipsWrap = document.getElementById('taskChips');
   chipsWrap.innerHTML = state.tasks.map(t => `
     <div class="task-chip ${state.selectedTask === t ? 'selected' : ''}" onclick="selectTask('${t.replace(/'/g, "\\'")}')">
-      <i class="fa-solid fa-circle-check text-xs"></i>
-      ${t}
-    </div>
-  `).join('');
-
-  // زر الإضافة
-  const addBtn = document.getElementById('addTaskBtn');
-  addBtn.disabled = !state.selectedTask;
-  addBtn.onclick = addTaskToToday;
-
-  // قائمة مهام اليوم
-  renderTodayTasks();
+      <i class="fa-solid fa-circle-check text-xs"></i> ${t}
+    </div>`).join('');
+  const startBtn = document.getElementById('startTaskBtn');
+  startBtn.disabled = !state.selectedTask;
+  startBtn.onclick = startTask;
 }
 
-function selectTask(task) {
-  state.selectedTask = state.selectedTask === task ? null : task;
-  renderTaskSection();
-}
+function selectTask(task) { state.selectedTask = state.selectedTask === task ? null : task; renderTaskChips(); }
 
-function addTaskToToday() {
-  if (!state.selectedTask) {
-    toast('اختر مهمة أولاً', 'warning');
-    return;
-  }
-  const task = {
-    id: Date.now(),
-    name: state.selectedTask,
-    time: new Date().toISOString()
-  };
-  state.todayTasks.push(task);
-  save(STORAGE_KEYS.todayTasks, state.todayTasks);
-  // حفظ في الجلسة أيضاً
-  if (state.session) {
-    if (!state.session.tasks) state.session.tasks = [];
-    state.session.tasks.push(task);
-    save(STORAGE_KEYS.session, state.session);
-  }
+function startTask() {
+  if (!state.selectedTask) { toast('اختر مهمة أولاً', 'warning'); return; }
+  state.session.activeTask = { name: state.selectedTask, startTime: new Date().toISOString() };
+  save(STORAGE_KEYS.session, state.session);
   state.selectedTask = null;
-  toast(`تم تسجيل المهمة: ${task.name}`, 'success');
+  toast(`تم بدء المهمة: ${state.session.activeTask.name} ⏱️`, 'success');
   renderTaskSection();
 }
 
-function renderTodayTasks() {
-  const list = document.getElementById('todayTasksList');
-  const count = document.getElementById('todayTaskCount');
-  if (!state.todayTasks.length) {
-    list.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">لا توجد مهام مسجلة اليوم</p>`;
-    count.textContent = '0';
-    return;
-  }
-  count.textContent = state.todayTasks.length;
-  list.innerHTML = state.todayTasks.map(t => {
-    const time = formatDateArabic(t.time).timeShort;
-    return `
-      <div class="today-task">
-        <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 text-sm">
-          <i class="fa-solid fa-check"></i>
+function renderActiveTask() {
+  const area = document.getElementById('activeTaskArea');
+  const task = state.session.activeTask;
+  const startTime = formatDateArabic(task.startTime).timeShort;
+  area.innerHTML = `
+    <div class="active-task-card">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <span class="live-indicator-amber"></span>
+          <span class="text-xs font-bold text-amber-400">مهمة جارية الآن</span>
         </div>
-        <div class="flex-1">
-          <p class="text-sm font-bold">${t.name}</p>
-          <p class="text-xs text-slate-500">${time}</p>
-        </div>
-        <button onclick="removeTodayTask(${t.id})" class="text-slate-500 hover:text-red-400 transition p-1">
-          <i class="fa-solid fa-times"></i>
-        </button>
+        <span class="text-xs text-slate-400">بدأت: ${startTime}</span>
       </div>
-    `;
-  }).join('');
+      <p class="text-lg font-bold mb-2">${task.name}</p>
+      <div class="flex items-center gap-2 mb-4">
+        <i class="fa-solid fa-stopwatch text-amber-400"></i>
+        <p id="activeTaskTimer" class="text-3xl font-black number-display gradient-amber">00:00:00</p>
+      </div>
+      <button onclick="endTask()" class="btn-danger" style="padding: 12px 20px; font-size: 14px;">
+        <i class="fa-solid fa-stop"></i> إنهاء المهمة
+      </button>
+    </div>`;
 }
 
-function removeTodayTask(id) {
-  state.todayTasks = state.todayTasks.filter(t => t.id !== id);
-  save(STORAGE_KEYS.todayTasks, state.todayTasks);
-  if (state.session && state.session.tasks) {
-    state.session.tasks = state.session.tasks.filter(t => t.id !== id);
-    save(STORAGE_KEYS.session, state.session);
+function endTask() {
+  if (!state.session.activeTask) return;
+  const task = state.session.activeTask;
+  const endTime = new Date().toISOString();
+  const duration = calcDuration(task.startTime, endTime);
+  const completedTask = {
+    id: Date.now(),
+    name: task.name,
+    startTime: task.startTime,
+    endTime: endTime,
+    duration: duration.totalMinutes
+  };
+  if (!state.session.tasks) state.session.tasks = [];
+  state.session.tasks.push(completedTask);
+  state.session.activeTask = null;
+  save(STORAGE_KEYS.session, state.session);
+  toast(`تم إنهاء: ${completedTask.name} (${duration.formormatted || duration.formatted}) ✓`, 'success');
+  renderTaskSection();
+}
+
+function renderCompletedTasks() {
+  const area = document.getElementById('completedTasksArea');
+  const list = document.getElementById('completedTasksList');
+  const count = document.getElementById('todayTaskCount');
+  const tasks = (state.session && state.session.tasks) || [];
+  if (tasks.length === 0) {
+    area.style.display = 'none';
+    count.textContent = '0 مكتملة';
+    return;
   }
-  renderTodayTasks();
-  toast('تم حذف المهمة', 'info');
+  area.style.display = 'block';
+  count.textContent = `${tasks.length} مكتملة`;
+  list.innerHTML = tasks.slice().reverse().map(t => {
+    const start = formatDateArabic(t.startTime).timeShort;
+    const end = formatDateArabic(t.endTime).timeShort;
+    const dur = formatDuration(t.duration);
+    return `
+      <div class="completed-task">
+        <div class="flex items-center justify-between mb-1">
+          <p class="text-sm font-bold">${t.name}</p>
+          <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold">${dur}</span>
+        </div>
+        <div class="flex items-center gap-2 text-xs text-slate-400">
+          <i class="fa-solid fa-play text-emerald-400"></i> ${start}
+          <i class="fa-solid fa-arrow-left text-slate-600"></i>
+          <i class="fa-solid fa-stop text-red-400"></i> ${end}
+        </div>
+      </div>`;
+  }).join('');
 }
 
 function updateMainActionButton() {
   const btn = document.getElementById('mainActionBtn');
-  const text = document.getElementById('mainActionText');
   if (state.session) {
     btn.className = 'btn-danger pulse-red mb-4';
     btn.innerHTML = `<i class="fa-solid fa-right-from-bracket"></i><span>تسجيل بصمة خروج</span>`;
@@ -977,28 +1029,22 @@ function updateMainActionButton() {
 }
 
 function checkIn() {
-  if (state.session) {
-    toast('أنت مسجل دخول بالفعل', 'warning');
-    return;
-  }
-  const now = new Date().toISOString();
-  state.session = {
-    checkIn: now,
-    tasks: []
-  };
-  state.todayTasks = [];
+  if (state.session) { toast('أنت مسجل دخول بالفعل', 'warning'); return; }
+  state.session = { checkIn: new Date().toISOString(), activeTask: null, tasks: [] };
   save(STORAGE_KEYS.session, state.session);
-  save(STORAGE_KEYS.todayTasks, state.todayTasks);
   toast('تم تسجيل بصمة الدخول بنجاح ✓', 'success');
   renderHome();
 }
 
 function confirmCheckOut() {
   if (!state.session) return;
+  const activeName = state.session.activeTask ? state.session.activeTask.name : null;
+  let msg = 'سيتم إنهاء جلسة العمل وحفظ السجل. لن تتمكن من التعديل بعد ذلك.';
+  if (activeName) msg = `لديك مهمة جارية "${activeName}" سيتم إنهاؤها تلقائياً. ` + msg;
   showConfirm({
     title: 'تأكيد بصمة الخروج',
     desc: 'هل أنت متأكد؟',
-    msg: `سيتم إنهاء جلسة العمل الحالية وحفظ السجل. لن تتمكن من التعديل بعد ذلك.`,
+    msg: msg,
     confirmText: 'نعم، تسجيل الخروج',
     type: 'warning',
     onConfirm: checkOut
@@ -1007,20 +1053,33 @@ function confirmCheckOut() {
 
 function checkOut() {
   if (!state.session) return;
+  // إنهاء أي مهمة نشطة تلقائياً
+  if (state.session.activeTask) {
+    const task = state.session.activeTask;
+    const endTime = new Date().toISOString();
+    const duration = calcDuration(task.startTime, endTime);
+    state.session.tasks.push({
+      id: Date.now(),
+      name: task.name,
+      startTime: task.startTime,
+      endTime: endTime,
+      duration: duration.totalMinutes
+    });
+    state.session.activeTask = null;
+  }
   const checkOutTime = new Date().toISOString();
+  const totalDuration = calcDuration(state.session.checkIn, checkOutTime).totalMinutes;
   const record = {
     id: Date.now(),
     checkIn: state.session.checkIn,
     checkOut: checkOutTime,
-    tasks: state.todayTasks,
-    duration: calcDuration(state.session.checkIn, checkOutTime).totalMinutes
+    tasks: state.session.tasks || [],
+    duration: totalDuration
   };
   state.records.push(record);
   save(STORAGE_KEYS.records, state.records);
   state.session = null;
-  state.todayTasks = [];
   save(STORAGE_KEYS.session, null);
-  save(STORAGE_KEYS.todayTasks, []);
   toast('تم تسجيل بصمة الخروج وحفظ السجل ✓', 'success');
   renderHome();
 }
@@ -1034,24 +1093,18 @@ function renderRecords() {
 
 function updateStats() {
   const filtered = getFilteredRecords();
-  let totalMinutes = 0;
-  let totalTasks = 0;
+  let totalMinutes = 0, totalTasks = 0, totalSalary = 0;
   const uniqueDays = new Set();
-
   filtered.forEach(r => {
     totalMinutes += r.duration || 0;
     totalTasks += (r.tasks || []).length;
     uniqueDays.add(r.checkIn.split('T')[0]);
+    totalSalary += calcSalary(r.duration || 0).totalPay;
   });
-
-  const totalHours = (totalMinutes / 60).toFixed(1);
-  const days = uniqueDays.size;
-  const avg = days > 0 ? (totalMinutes / days / 60).toFixed(1) : '0';
-
-  document.getElementById('totalHours').textContent = totalHours;
-  document.getElementById('totalDays').textContent = days;
+  document.getElementById('totalHours').textContent = (totalMinutes / 60).toFixed(1);
+  document.getElementById('totalDays').textContent = uniqueDays.size;
   document.getElementById('totalTasks').textContent = totalTasks;
-  document.getElementById('avgHours').textContent = avg;
+  document.getElementById('totalSalary').textContent = totalSalary.toFixed(0);
 }
 
 function getAvailableMonths() {
@@ -1080,24 +1133,12 @@ function getAvailableDays(monthKey) {
 function populateFilters() {
   const monthSelect = document.getElementById('filterMonth');
   const daySelect = document.getElementById('filterDay');
-
   const months = getAvailableMonths();
-  monthSelect.innerHTML = `<option value="all">كل الشهور</option>` +
-    months.map(([k, l]) => `<option value="${k}" ${state.filterMonth === k ? 'selected' : ''}>${l}</option>`).join('');
-
+  monthSelect.innerHTML = `<option value="all">كل الشهور</option>` + months.map(([k, l]) => `<option value="${k}" ${state.filterMonth === k ? 'selected' : ''}>${l}</option>`).join('');
   const days = getAvailableDays(state.filterMonth);
-  daySelect.innerHTML = `<option value="all">كل الأيام</option>` +
-    days.map(([k, l]) => `<option value="${k}" ${state.filterDay === k ? 'selected' : ''}>${l}</option>`).join('');
-
-  monthSelect.onchange = (e) => {
-    state.filterMonth = e.target.value;
-    state.filterDay = 'all';
-    renderRecords();
-  };
-  daySelect.onchange = (e) => {
-    state.filterDay = e.target.value;
-    renderRecords();
-  };
+  daySelect.innerHTML = `<option value="all">كل الأيام</option>` + days.map(([k, l]) => `<option value="${k}" ${state.filterDay === k ? 'selected' : ''}>${l}</option>`).join('');
+  monthSelect.onchange = (e) => { state.filterMonth = e.target.value; state.filterDay = 'all'; renderRecords(); };
+  daySelect.onchange = (e) => { state.filterDay = e.target.value; renderRecords(); };
 }
 
 function getFilteredRecords() {
@@ -1115,28 +1156,22 @@ function renderRecordsList() {
   const list = document.getElementById('recordsList');
   const empty = document.getElementById('emptyState');
   const count = document.getElementById('recordsCount');
-
   const filtered = getFilteredRecords();
   count.textContent = `${filtered.length} سجل`;
-
-  if (filtered.length === 0) {
-    list.innerHTML = '';
-    empty.style.display = 'block';
-    return;
-  }
+  if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
   empty.style.display = 'none';
-
   list.innerHTML = filtered.map(r => {
     const checkInInfo = formatDateArabic(r.checkIn);
     const checkOutInfo = formatDateArabic(r.checkOut);
     const duration = formatDuration(r.duration || 0);
-    const tasks = (r.tasks || []).map(t => `<span class="task-tag">${t.name}</span>`).join('');
-
+    const tasks = (r.tasks || []);
+    const salary = calcSalary(r.duration || 0);
+    const hasOT = salary.overtimeHours > 0;
     return `
       <div class="table-row p-4">
         <div class="flex items-start justify-between mb-3">
           <div>
-            <p class="font-bold text-sm mb-1">${checkInInfo.dayName} ${checkInInfo.fullDate.split(' ')[0]}</p>
+            <p class="font-bold text-sm mb-1">${checkInInfo.dayName} ${checkInInfo.fullDate.split(' ')[0]} ${checkInInfo.fullDate.split(' ')[1]}</p>
             <p class="text-xs text-slate-500">${checkInInfo.fullDate}</p>
           </div>
           <div class="text-left">
@@ -1144,7 +1179,6 @@ function renderRecordsList() {
             <p class="text-xs text-slate-500">مدة العمل</p>
           </div>
         </div>
-
         <div class="grid grid-cols-2 gap-2 mb-3">
           <div class="glass-soft p-2.5">
             <p class="text-xs text-slate-500 mb-0.5"><i class="fa-solid fa-sign-in-alt text-emerald-400 ml-1"></i> دخول</p>
@@ -1155,217 +1189,401 @@ function renderRecordsList() {
             <p class="font-bold text-sm number-display">${checkOutInfo.timeShort}</p>
           </div>
         </div>
-
-        ${tasks ? `<div class="flex flex-wrap gap-1 mb-2">${tasks}</div>` : '<p class="text-xs text-slate-500 mb-2"><i class="fa-solid fa-info-circle ml-1"></i> لا توجد مهام مسجلة</p>'}
-      </div>
-    `;
+        <div class="flex flex-wrap items-center gap-2 mb-3">
+          <span class="text-xs text-slate-500"><i class="fa-solid fa-tasks ml-1"></i> ${tasks.length} مهمة</span>
+          ${salary.hasRate ? `
+            <span class="salary-badge"><i class="fa-solid fa-money-bill-wave"></i> ${salary.totalPay.toFixed(0)} ج</span>
+            ${hasOT ? `<span class="overtime-badge"><i class="fa-solid fa-clock"></i> +${salary.overtimeHours.toFixed(1)}س إضافي</span>` : ''}
+          ` : ''}
+        </div>
+        <button onclick="showRecordDetails(${r.id})" class="btn-ghost w-full text-xs py-2.5">
+          <i class="fa-solid fa-eye text-emerald-400"></i> عرض التفاصيل
+        </button>
+      </div>`;
   }).join('');
 }
 
-/* =============== تصدير Excel =============== */
-function exportToExcel(records, filename = 'بصمة_السجلات') {
-  if (!records || records.length === 0) {
-    toast('لا توجد بيانات للتصدير', 'warning');
-    return;
+function showRecordDetails(recordId) {
+  const record = state.records.find(r => r.id === recordId);
+  if (!record) return;
+  const checkInInfo = formatDateArabic(record.checkIn);
+  const checkOutInfo = formatDateArabic(record.checkOut);
+  const duration = formatDurationPrecise(record.duration || 0);
+  const tasks = record.tasks || [];
+  const salary = calcSalary(record.duration || 0);
+  document.getElementById('detailsDate').textContent = `${checkInInfo.dayName} ${checkInInfo.fullDate}`;
+  let html = `
+    <div class="grid grid-cols-2 gap-2 mb-4">
+      <div class="glass-soft p-3 text-center">
+        <p class="text-xs text-slate-500 mb-1"><i class="fa-solid fa-sign-in-alt text-emerald-400"></i> بصمة الدخول</p>
+        <p class="font-bold text-base number-display">${checkInInfo.timeShort}</p>
+      </div>
+      <div class="glass-soft p-3 text-center">
+        <p class="text-xs text-slate-500 mb-1"><i class="fa-solid fa-right-from-bracket text-red-400"></i> بصمة الخروج</p>
+        <p class="font-bold text-base number-display">${checkOutInfo.timeShort}</p>
+      </div>
+    </div>
+    <div class="glass-soft p-3 mb-4 text-center">
+      <p class="text-xs text-slate-500 mb-1">إجمالي مدة العمل</p>
+      <p class="font-black text-xl gradient-text">${duration}</p>
+    </div>`;
+  if (tasks.length > 0) {
+    html += `
+      <div class="mb-4">
+        <p class="text-sm font-bold mb-2 flex items-center gap-2"><i class="fa-solid fa-list-check text-emerald-400"></i> المهام (${tasks.length})</p>
+        <div class="space-y-2">
+          ${tasks.map((t, i) => {
+            const ts = formatDateArabic(t.startTime);
+            const te = formatDateArabic(t.endTime);
+            const tdur = formatDuration(t.duration || 0);
+            return `
+              <div class="glass-soft p-3">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-2">
+                    <span class="w-6 h-6 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 text-xs font-bold">${i+1}</span>
+                    <span class="font-bold text-sm">${t.name}</span>
+                  </div>
+                  <span class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded font-bold">${tdur}</span>
+                </div>
+                <div class="flex items-center gap-2 text-xs text-slate-400">
+                  <span><i class="fa-solid fa-play text-emerald-400"></i> ${ts.timeShort}</span>
+                  <i class="fa-solid fa-arrow-left text-slate-600 text-[10px]"></i>
+                  <span><i class="fa-solid fa-stop text-red-400"></i> ${te.timeShort}</span>
+                </div>
+              </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  } else {
+    html += `<div class="glass-soft p-4 text-center mb-4"><p class="text-xs text-slate-500">لا توجد مهام مسجلة في هذا اليوم</p></div>`;
   }
+  if (salary.hasRate) {
+    html += `
+      <div class="glass p-4">
+        <p class="text-sm font-bold mb-3 flex items-center gap-2"><i class="fa-solid fa-money-bill-wave text-purple-400"></i> حساب الراتب</p>
+        <div class="space-y-2">
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400">ساعات عادية (${salary.regularHours.toFixed(1)}س × ${state.hourlyRate} ج)</span>
+            <span class="font-bold text-emerald-400">${salary.regularPay.toFixed(0)} ج</span>
+          </div>
+          ${salary.overtimeHours > 0 ? `
+          <div class="flex items-center justify-between text-xs">
+            <span class="text-slate-400">ساعات إضافية (${salary.overtimeHours.toFixed(1)}س × ${(state.hourlyRate * OVERTIME_MULTIPLIER).toFixed(1)} ج)</span>
+            <span class="font-bold text-amber-400">${salary.overtimePay.toFixed(0)} ج</span>
+          </div>` : ''}
+          <div class="border-t border-white/10 pt-2 flex items-center justify-between">
+            <span class="text-sm font-bold">الإجمالي</span>
+            <span class="font-black text-lg gradient-text">${salary.totalPay.toFixed(0)} ج</span>
+          </div>
+        </div>
+      </div>`;
+  } else {
+    html += `<div class="glass-soft p-3 text-center"><p class="text-xs text-slate-500"><i class="fa-solid fa-info-circle ml-1"></i> لم يتم ضبط الراتب بالساعة. اذهب للإعدادات لضبطه.</p></div>`;
+  }
+  document.getElementById('detailsContent').innerHTML = html;
+  document.getElementById('detailsModal').classList.add('active');
+}
 
-  const data = records.map(r => {
-    const checkIn = formatDateArabic(r.checkIn);
-    const checkOut = formatDateArabic(r.checkOut);
-    const tasks = (r.tasks || []).map(t => t.name).join('، ');
-    return {
-      'التاريخ': checkIn.fullDate,
-      'اليوم': checkIn.dayName,
-      'وقت الدخول': checkIn.timeShort,
-      'وقت الخروج': checkOut.timeShort,
-      'مدة العمل': formatDuration(r.duration || 0),
-      'عدد المهام': (r.tasks || []).length,
-      'المهام': tasks || '—'
-    };
-  });
-
-  // إضافة صف الملخص
-  const totalMin = records.reduce((s, r) => s + (r.duration || 0), 0);
-  data.push({
-    'التاريخ': '—',
-    'اليوم': 'الإجمالي',
-    'وقت الدخول': '—',
-    'وقت الخروج': '—',
-    'مدة العمل': formatDuration(totalMin),
-    'عدد المهام': records.reduce((s, r) => s + (r.tasks || []).length, 0),
-    'المهام': '—'
-  });
-
-  const ws = XLSX.utils.json_to_sheet(data);
-  // ضبط عرض الأعمدة
-  ws['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 40 }];
+/* =============== تصدير Excel احترافي =============== */
+function exportToExcel(records, filename = 'بصمة_السجلات') {
+  if (!records || records.length === 0) { toast('لا توجد بيانات للتصدير', 'warning'); return; }
 
   const wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'السجلات');
+  const rate = state.hourlyRate || 0;
+
+  // ====== الورقة 1: ملخص البصمات ======
+  const summaryAOA = [];
+  // عنوان التقرير
+  summaryAOA.push([`تقرير بصمات - ${state.name || 'موظف'}`]);
+  summaryAOA.push([`تاريخ التصدير: ${formatDateArabic(new Date()).fullDate} - ${formatDateArabic(new Date()).timeShort}`]);
+  summaryAOA.push([`الراتب بالساعة: ${rate} جنيه | ساعات العمل القياسية: ${STANDARD_HOURS} ساعات | معدل الإضافي: ×${OVERTIME_MULTIPLIER}`]);
+  summaryAOA.push([]);
+  // عناوين الأعمدة
+  const headers = ['#', 'التاريخ', 'اليوم', 'وقت الدخول', 'وقت الخروج', 'مدة العمل', 'ساعات عادية', 'ساعات إضافية', 'الراتب العادي', 'راتب الإضافي', 'الإجمالي', 'عدد المهام'];
+  summaryAOA.push(headers);
+
+  let totalMin = 0, totalRegPay = 0, totalOTPay = 0, totalTasksCount = 0, totalRegHrs = 0, totalOTHrs = 0;
+
+  records.forEach((r, idx) => {
+    const ci = formatDateArabic(r.checkIn);
+    const co = formatDateArabic(r.checkOut);
+    const dur = formatDuration(r.duration || 0);
+    const salary = calcSalary(r.duration || 0);
+    const taskCount = (r.tasks || []).length;
+    totalMin += r.duration || 0;
+    totalRegPay += salary.regularPay;
+    totalOTPay += salary.overtimePay;
+    totalTasksCount += taskCount;
+    totalRegHrs += salary.regularHours;
+    totalOTHrs += salary.overtimeHours;
+    summaryAOA.push([
+      idx + 1, ci.fullDate, ci.dayName, ci.timeShort, co.timeShort, dur,
+      salary.regularHours.toFixed(1) + 'س',
+      salary.overtimeHours.toFixed(1) + 'س',
+      salary.regularPay.toFixed(0) + ' ج',
+      salary.overtimePay.toFixed(0) + ' ج',
+      salary.totalPay.toFixed(0) + ' ج',
+      taskCount
+    ]);
+  });
+
+  // صف الإجمالي
+  summaryAOA.push([]);
+  summaryAOA.push(['', '', '', '', 'الإجمالي', formatDuration(totalMin), totalRegHrs.toFixed(1)+'س', totalOTHrs.toFixed(1)+'س', totalRegPay.toFixed(0)+' ج', totalOTPay.toFixed(0)+' ج', (totalRegPay+totalOTPay).toFixed(0)+' ج', totalTasksCount]);
+
+  const ws1 = XLSX.utils.aoa_to_sheet(summaryAOA);
+
+  // دمج خلايا العنوان
+  ws1['!merges'] = [
+    { s: { r: 0, c: 0 }, e: { r: 0, c: 11 } },
+    { s: { r: 1, c: 0 }, e: { r: 1, c: 11 } },
+    { s: { r: 2, c: 0 }, e: { r: 2, c: 11 } }
+  ];
+
+  // عرض الأعمدة
+  ws1['!cols'] = [
+    { wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 },
+    { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }
+  ];
+
+  // ارتفاع الصفوف
+  ws1['!rows'] = [{ hpt: 32 }, { hpt: 22 }, { hpt: 22 }, {}, { hpt: 28 }];
+
+  // الأنماط
+  const titleStyle = { font: { name: 'Tajawal', bold: true, sz: 16, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '10B981' } }, alignment: { horizontal: 'center', vertical: 'center' } };
+  const subtitleStyle = { font: { name: 'Tajawal', sz: 11, color: { rgb: 'CBD5E1' } }, fill: { fgColor: { rgb: '1E293B' } }, alignment: { horizontal: 'center', vertical: 'center' } };
+  const headerStyle = { font: { name: 'Tajawal', bold: true, sz: 12, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '0F766E' } }, alignment: { horizontal: 'center', vertical: 'center', wrapText: true }, border: { top: { style: 'thin', color: { rgb: 'FFFFFF' } }, bottom: { style: 'thin', color: { rgb: 'FFFFFF' } }, left: { style: 'thin', color: { rgb: 'FFFFFF' } }, right: { style: 'thin', color: { rgb: 'FFFFFF' } } } };
+  const dataStyle = { font: { name: 'Tajawal', sz: 11, color: { rgb: '1E293B' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: { top: { style: 'thin', color: { rgb: 'E2E8F0' } }, bottom: { style: 'thin', color: { rgb: 'E2E8F0' } }, left: { style: 'thin', color: { rgb: 'E2E8F0' } }, right: { style: 'thin', color: { rgb: 'E2E8F0' } } } };
+  const altDataStyle = { ...dataStyle, fill: { fgColor: { rgb: 'F0FDF4' } } };
+  const totalStyle = { font: { name: 'Tajawal', bold: true, sz: 12, color: { rgb: 'FFFFFF' } }, fill: { fgColor: { rgb: '059669' } }, alignment: { horizontal: 'center', vertical: 'center' }, border: { top: { style: 'medium', color: { rgb: '10B981' } }, bottom: { style: 'medium', color: { rgb: '10B981' } }, left: { style: 'thin', color: { rgb: '10B981' } }, right: { style: 'thin', color: { rgb: '10B981' } } } };
+
+  // تطبيق الأنماط
+  ['A1','B1','C1','D1','E1','F1','G1','H1','I1','J1','K1','L1'].forEach(c => { if (ws1[c]) ws1[c].s = titleStyle; });
+  ['A2','B2','C2','D2','E2','F2','G2','H2','I2','J2','K2','L2'].forEach(c => { if (ws1[c]) ws1[c].s = subtitleStyle; });
+  ['A3','B3','C3','D3','E3','F3','G3','H3','I3','J3','K3','L3'].forEach(c => { if (ws1[c]) ws1[c].s = subtitleStyle; });
+
+  const headerRow = 4;
+  for (let c = 0; c < 12; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: headerRow, c });
+    if (ws1[cellRef]) ws1[cellRef].s = headerStyle;
+  }
+
+  const dataStartRow = 5;
+  const dataEndRow = dataStartRow + records.length - 1;
+  for (let r = dataStartRow; r <= dataEndRow; r++) {
+    for (let c = 0; c < 12; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (ws1[cellRef]) ws1[cellRef].s = (r - dataStartRow) % 2 === 0 ? dataStyle : altDataStyle;
+    }
+  }
+
+  const totalRowIdx = dataEndRow + 2;
+  for (let c = 0; c < 12; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: totalRowIdx, c });
+    if (ws1[cellRef]) ws1[cellRef].s = totalStyle;
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws1, 'ملخص البصمات');
+
+  // ====== الورقة 2: تفاصيل المهام ======
+  const tasksAOA = [];
+  tasksAOA.push([`تفاصيل المهام - ${state.name || 'موظف'}`]);
+  tasksAOA.push([]);
+  const taskHeaders = ['#', 'التاريخ', 'اليوم', 'اسم المهمة', 'وقت البداية', 'وقت النهاية', 'المدة'];
+  tasksAOA.push(taskHeaders);
+
+  let taskIdx = 0;
+  let totalTaskMin = 0;
+  records.forEach(r => {
+    const ci = formatDateArabic(r.checkIn);
+    (r.tasks || []).forEach(t => {
+      taskIdx++;
+      const ts = formatDateArabic(t.startTime);
+      const te = formatDateArabic(t.endTime);
+      const tdur = formatDuration(t.duration || 0);
+      totalTaskMin += t.duration || 0;
+      tasksAOA.push([taskIdx, ci.fullDate, ci.dayName, t.name, ts.timeShort, te.timeShort, tdur]);
+    });
+  });
+
+  if (taskIdx > 0) {
+    tasksAOA.push([]);
+    tasksAOA.push(['', '', '', '', '', 'الإجمالي', formatDuration(totalTaskMin)]);
+  }
+
+  const ws2 = XLSX.utils.aoa_to_sheet(tasksAOA);
+  ws2['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 6 } }];
+  ws2['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 12 }, { wch: 25 }, { wch: 12 }, { wch: 12 }, { wch: 14 }];
+  ws2['!rows'] = [{ hpt: 32 }, {}, { hpt: 28 }];
+
+  ['A1','B1','C1','D1','E1','F1','G1'].forEach(c => { if (ws2[c]) ws2[c].s = titleStyle; });
+  for (let c = 0; c < 7; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 2, c });
+    if (ws2[cellRef]) ws2[cellRef].s = headerStyle;
+  }
+  const tDataStart = 3;
+  const tDataEnd = tDataStart + taskIdx - 1;
+  for (let r = tDataStart; r <= tDataEnd; r++) {
+    for (let c = 0; c < 7; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (ws2[cellRef]) ws2[cellRef].s = (r - tDataStart) % 2 === 0 ? dataStyle : altDataStyle;
+    }
+  }
+  if (taskIdx > 0) {
+    const tTotalRow = tDataEnd + 2;
+    for (let c = 0; c < 7; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r: tTotalRow, c });
+      if (ws2[cellRef]) ws2[cellRef].s = totalStyle;
+    }
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws2, 'تفاصيل المهام');
+
+  // ====== الورقة 3: ملخص الرواتب ======
+  const salaryAOA = [];
+  salaryAOA.push([`ملخص الرواتب - ${state.name || 'موظف'}`]);
+  salaryAOA.push([]);
+  salaryAOA.push(['#', 'التاريخ', 'ساعات عادية', 'ساعات إضافية', 'إجمالي الساعات', 'الراتب العادي', 'راتب الإضافي', 'الإجمالي']);
+  
+  records.forEach((r, idx) => {
+    const ci = formatDateArabic(r.checkIn);
+    const salary = calcSalary(r.duration || 0);
+    const totalHrs = (r.duration || 0) / 60;
+    salaryAOA.push([
+      idx + 1, ci.fullDate,
+      salary.regularHours.toFixed(1),
+      salary.overtimeHours.toFixed(1),
+      totalHrs.toFixed(1),
+      salary.regularPay.toFixed(0) + ' ج',
+      salary.overtimePay.toFixed(0) + ' ج',
+      salary.totalPay.toFixed(0) + ' ج'
+    ]);
+  });
+
+  salaryAOA.push([]);
+  salaryAOA.push(['', 'الإجمالي', totalRegHrs.toFixed(1)+'س', totalOTHrs.toFixed(1)+'س', (totalMin/60).toFixed(1)+'س', totalRegPay.toFixed(0)+' ج', totalOTPay.toFixed(0)+' ج', (totalRegPay+totalOTPay).toFixed(0)+' ج']);
+
+  const ws3 = XLSX.utils.aoa_to_sheet(salaryAOA);
+  ws3['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+  ws3['!cols'] = [{ wch: 5 }, { wch: 18 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }];
+  ws3['!rows'] = [{ hpt: 32 }, {}, { hpt: 28 }];
+
+  ['A1','B1','C1','D1','E1','F1','G1','H1'].forEach(c => { if (ws3[c]) ws3[c].s = titleStyle; });
+  for (let c = 0; c < 8; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: 2, c });
+    if (ws3[cellRef]) ws3[cellRef].s = headerStyle;
+  }
+  const sDataStart = 3;
+  const sDataEnd = sDataStart + records.length - 1;
+  for (let r = sDataStart; r <= sDataEnd; r++) {
+    for (let c = 0; c < 8; c++) {
+      const cellRef = XLSX.utils.encode_cell({ r, c });
+      if (ws3[cellRef]) ws3[cellRef].s = (r - sDataStart) % 2 === 0 ? dataStyle : altDataStyle;
+    }
+  }
+  const sTotalRow = sDataEnd + 2;
+  for (let c = 0; c < 8; c++) {
+    const cellRef = XLSX.utils.encode_cell({ r: sTotalRow, c });
+    if (ws3[cellRef]) ws3[cellRef].s = totalStyle;
+  }
+
+  XLSX.utils.book_append_sheet(wb, ws3, 'ملخص الرواتب');
+
   XLSX.writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
-  toast('تم تصدير الملف بنجاح ✓', 'success');
+  toast('تم تصدير ملف Excel بنجاح ✓', 'success');
 }
 
 /* =============== الصفحة 4: الإعدادات =============== */
 function renderSettings() {
   document.getElementById('editNameInput').value = state.name;
+  document.getElementById('hourlyRateInput').value = state.hourlyRate || '';
   renderTasksManager();
 }
 
 function renderTasksManager() {
   const list = document.getElementById('tasksManagerList');
-  if (state.tasks.length === 0) {
-    list.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">لا توجد مهام. أضف مهمة جديدة.</p>`;
-    return;
-  }
+  if (state.tasks.length === 0) { list.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">لا توجد مهام. أضف مهمة جديدة.</p>`; return; }
   list.innerHTML = state.tasks.map((t, i) => `
     <div class="flex items-center justify-between p-3 glass-soft">
       <div class="flex items-center gap-3">
-        <div class="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 text-xs font-bold">
-          ${i + 1}
-        </div>
+        <div class="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 text-xs font-bold">${i + 1}</div>
         <span class="font-medium text-sm">${t}</span>
       </div>
-      <button onclick="deleteTask(${i})" class="text-slate-500 hover:text-red-400 transition p-1">
-        <i class="fa-solid fa-trash-can text-sm"></i>
-      </button>
-    </div>
-  `).join('');
+      <button onclick="deleteTask(${i})" class="text-slate-500 hover:text-red-400 transition p-1"><i class="fa-solid fa-trash-can text-sm"></i></button>
+    </div>`).join('');
 }
 
 function deleteTask(index) {
   const taskName = state.tasks[index];
   showConfirm({
-    title: 'حذف المهمة',
-    desc: `سيتم حذف "${taskName}"`,
+    title: 'حذف المهمة', desc: `سيتم حذف "${taskName}"`,
     msg: 'لن تظهر هذه المهمة في قائمة الاختيار مستقبلاً. لن تتأثر السجلات السابقة.',
-    confirmText: 'حذف',
-    type: 'danger',
-    onConfirm: () => {
-      state.tasks.splice(index, 1);
-      save(STORAGE_KEYS.tasks, state.tasks);
-      renderTasksManager();
-      toast('تم حذف المهمة', 'success');
-    }
+    confirmText: 'حذف', type: 'danger',
+    onConfirm: () => { state.tasks.splice(index, 1); save(STORAGE_KEYS.tasks, state.tasks); renderTasksManager(); toast('تم حذف المهمة', 'success'); }
   });
 }
 
 /* =============== تهيئة الأحداث =============== */
 function initEvents() {
-  // الإعدادات: حفظ الاسم
   document.getElementById('saveNameBtn').onclick = () => {
     const newName = document.getElementById('editNameInput').value.trim();
-    if (!newName) {
-      toast('الاسم لا يمكن أن يكون فارغاً', 'warning');
-      return;
-    }
-    state.name = newName;
-    save(STORAGE_KEYS.name, newName);
-    toast('تم حفظ الاسم ✓', 'success');
+    if (!newName) { toast('الاسم لا يمكن أن يكون فارغاً', 'warning'); return; }
+    state.name = newName; save(STORAGE_KEYS.name, newName); toast('تم حفظ الاسم ✓', 'success');
   };
 
-  // الإعدادات: إضافة مهمة
+  document.getElementById('saveRateBtn').onclick = () => {
+    const rate = parseFloat(document.getElementById('hourlyRateInput').value);
+    if (isNaN(rate) || rate < 0) { toast('أدخل قيمة صحيحة', 'warning'); return; }
+    state.hourlyRate = rate;
+    localStorage.setItem(STORAGE_KEYS.hourlyRate, String(rate));
+    toast('تم حفظ الراتب بالساعة ✓', 'success');
+  };
+
   const newTaskInput = document.getElementById('newTaskInput');
   const addNewTask = () => {
     const val = newTaskInput.value.trim();
-    if (!val) {
-      toast('اكتب اسم المهمة', 'warning');
-      return;
-    }
-    if (state.tasks.includes(val)) {
-      toast('هذه المهمة موجودة بالفعل', 'warning');
-      return;
-    }
-    state.tasks.push(val);
-    save(STORAGE_KEYS.tasks, state.tasks);
-    newTaskInput.value = '';
-    renderTasksManager();
-    toast('تمت إضافة المهمة ✓', 'success');
+    if (!val) { toast('اكتب اسم المهمة', 'warning'); return; }
+    if (state.tasks.includes(val)) { toast('هذه المهمة موجودة بالفعل', 'warning'); return; }
+    state.tasks.push(val); save(STORAGE_KEYS.tasks, state.tasks); newTaskInput.value = ''; renderTasksManager(); toast('تمت إضافة المهمة ✓', 'success');
   };
   document.getElementById('addTaskToListBtn').onclick = addNewTask;
   newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addNewTask(); });
 
-  // الإعدادات: تصدير الكل
   document.getElementById('exportAllBtn').onclick = () => {
-    if (state.records.length === 0) {
-      toast('لا توجد سجلات للتصدير', 'warning');
-      return;
-    }
-    exportToExcel(state.records, 'بصمة_كل_السجلات');
+    if (state.records.length === 0) { toast('لا توجد سجلات للتصدير', 'warning'); return; }
+    exportToExcel(state.records, `بصمة_${state.name}_كل_السجلات`);
   };
-
-  // تصدير المفلتر
   document.getElementById('exportFilteredBtn').onclick = () => {
     const filtered = getFilteredRecords();
-    if (filtered.length === 0) {
-      toast('لا توجد بيانات للتصدير', 'warning');
-      return;
-    }
-    exportToExcel(filtered, 'بصمة_سجلات_مفلترة');
+    if (filtered.length === 0) { toast('لا توجد بيانات للتصدير', 'warning'); return; }
+    exportToExcel(filtered, `بصمة_${state.name}_سجلات_مفلترة`);
   };
-
-  // تصدير يوم محدد
   document.getElementById('exportDayBtn').onclick = () => {
-    if (state.filterDay === 'all') {
-      toast('اختر يوماً محدداً من الفلتر أولاً', 'warning');
-      return;
-    }
+    if (state.filterDay === 'all') { toast('اختر يوماً محدداً من الفلتر أولاً', 'warning'); return; }
     const filtered = getFilteredRecords();
-    if (filtered.length === 0) {
-      toast('لا توجد سجلات في هذا اليوم', 'warning');
-      return;
-    }
-    exportToExcel(filtered, `بصمة_يوم_${state.filterDay}`);
+    if (filtered.length === 0) { toast('لا توجد سجلات في هذا اليوم', 'warning'); return; }
+    exportToExcel(filtered, `بصمة_${state.name}_يوم_${state.filterDay}`);
   };
+  document.getElementById('clearFiltersBtn').onclick = () => { state.filterMonth = 'all'; state.filterDay = 'all'; renderRecords(); toast('تم إلغاء الفلاتر', 'info'); };
 
-  // إلغاء الفلتر
-  document.getElementById('clearFiltersBtn').onclick = () => {
-    state.filterMonth = 'all';
-    state.filterDay = 'all';
-    renderRecords();
-    toast('تم إلغاء الفلاتر', 'info');
-  };
-
-  // مسح السجلات فقط
   document.getElementById('clearRecordsBtn').onclick = () => {
-    if (state.records.length === 0) {
-      toast('لا توجد سجلات للمسح', 'warning');
-      return;
-    }
+    if (state.records.length === 0) { toast('لا توجد سجلات للمسح', 'warning'); return; }
     showConfirm({
-      title: 'مسح السجلات',
-      desc: `${state.records.length} سجل سيتم حذفه`,
-      msg: 'سيتم حذف جميع سجلات البصمات السابقة. لا يمكن التراجع عن هذا الإجراء. ننصح بتصدير البيانات أولاً.',
-      confirmText: 'مسح السجلات',
-      type: 'danger',
-      onConfirm: () => {
-        state.records = [];
-        save(STORAGE_KEYS.records, []);
-        renderRecords();
-        toast('تم مسح السجلات', 'success');
-      }
+      title: 'مسح السجلات', desc: `${state.records.length} سجل سيتم حذفه`,
+      msg: 'سيتم حذف جميع سجلات البصمات السابقة. لا يمكن التراجع. ننصح بتصدير البيانات أولاً.',
+      confirmText: 'مسح السجلات', type: 'danger',
+      onConfirm: () => { state.records = []; save(STORAGE_KEYS.records, []); renderRecords(); toast('تم مسح السجلات', 'success'); }
     });
   };
 
-  // مسح كل البيانات
   document.getElementById('clearAllBtn').onclick = () => {
     showConfirm({
-      title: 'إعادة تعيين التطبيق',
-      desc: 'تحذير: سيتم مسح كل شيء',
-      msg: 'سيتم حذف اسمك، جميع السجلات، المهام المخصصة، والجلسة الحالية. سيتم إرجاعك لصفحة البداية. لا يمكن التراجع.',
-      confirmText: 'نعم، امسح كل شيء',
-      type: 'danger',
+      title: 'إعادة تعيين التطبيق', desc: 'تحذير: سيتم مسح كل شيء',
+      msg: 'سيتم حذف اسمك، جميع السجلات، المهام المخصصة، والجلسة الحالية. لا يمكن التراجع.',
+      confirmText: 'نعم، امسح كل شيء', type: 'danger',
       onConfirm: () => {
-        localStorage.removeItem(STORAGE_KEYS.name);
-        localStorage.removeItem(STORAGE_KEYS.tasks);
-        localStorage.removeItem(STORAGE_KEYS.records);
-        localStorage.removeItem(STORAGE_KEYS.session);
-        localStorage.removeItem(STORAGE_KEYS.todayTasks);
-        state.name = '';
-        state.tasks = [...DEFAULT_TASKS];
-        state.records = [];
-        state.session = null;
-        state.todayTasks = [];
+        Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+        state.name = ''; state.tasks = [...DEFAULT_TASKS]; state.records = []; state.session = null; state.hourlyRate = 0;
         stopLiveTimer();
         document.getElementById('bottomNav').style.display = 'none';
         document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1379,16 +1597,8 @@ function initEvents() {
 }
 
 /* =============== البدء =============== */
-document.addEventListener('DOMContentLoaded', () => {
-  initOnboarding();
-  initEvents();
-});
-
-// منع تحديد النص على الأزرار
-document.addEventListener('selectstart', (e) => {
-  if (e.target.closest('button, .nav-item, .task-chip')) e.preventDefault();
-});
+document.addEventListener('DOMContentLoaded', () => { initOnboarding(); initEvents(); });
+document.addEventListener('selectstart', (e) => { if (e.target.closest('button, .nav-item, .task-chip')) e.preventDefault(); });
 </script>
-
 </body>
 </html>
