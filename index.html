@@ -1,0 +1,1394 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>بصمة | نظام تسجيل الحضور والانصراف</title>
+<link rel="icon" href="./logo.PNG"  type="image/png"/>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&display=swap" rel="stylesheet">
+<script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+<style>
+  * { font-family: 'Tajawal', sans-serif; -webkit-tap-highlight-color: transparent; }
+  html, body { background: #070b16; color: #e2e8f0; min-height: 100vh; overflow-x: hidden; }
+  body { padding-bottom: 100px; }
+
+  /* خلفية متحركة */
+  .bg-decor {
+    position: fixed; inset: 0; z-index: -2; pointer-events: none;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(16,185,129,0.18) 0%, transparent 35%),
+      radial-gradient(circle at 85% 90%, rgba(245,158,11,0.12) 0%, transparent 35%),
+      radial-gradient(circle at 50% 50%, rgba(99,102,241,0.08) 0%, transparent 50%),
+      linear-gradient(180deg, #070b16 0%, #0d1424 50%, #070b16 100%);
+  }
+  .bg-grid {
+    position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: 0.4;
+    background-image:
+      linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px);
+    background-size: 40px 40px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+  }
+
+  /* الصفحات */
+  .page { display: none; animation: fadeUp 0.5s cubic-bezier(.16,1,.3,1); }
+  .page.active { display: block; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* زجاجي */
+  .glass {
+    background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 24px;
+  }
+  .glass-soft {
+    background: rgba(255,255,255,0.025);
+    border: 1px solid rgba(255,255,255,0.05);
+    border-radius: 18px;
+  }
+
+  /* شريط التنقل السفلي */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 100;
+    background: rgba(10,15,28,0.85); backdrop-filter: blur(24px); -webkit-backdrop-filter: blur(24px);
+    border-top: 1px solid rgba(255,255,255,0.06);
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    display: flex; justify-content: space-around; max-width: 640px; margin: 0 auto;
+    border-radius: 28px 28px 0 0;
+    box-shadow: 0 -10px 40px rgba(0,0,0,0.4);
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center; gap: 4px;
+    padding: 10px 18px; color: #64748b; cursor: pointer; border-radius: 16px;
+    transition: all .3s cubic-bezier(.16,1,.3,1); flex: 1; position: relative;
+    font-size: 11px; font-weight: 600;
+  }
+  .nav-item i { font-size: 20px; transition: all .3s; }
+  .nav-item.active { color: #10b981; }
+  .nav-item.active i { transform: translateY(-3px) scale(1.15); }
+  .nav-item.active::before {
+    content: ''; position: absolute; top: -2px; left: 50%; transform: translateX(-50%);
+    width: 30px; height: 3px; background: linear-gradient(90deg, #10b981, #34d399); border-radius: 0 0 4px 4px;
+    box-shadow: 0 0 12px rgba(16,185,129,0.6);
+  }
+  .nav-item:not(.active):hover { color: #94a3b8; }
+
+  /* أزرار */
+  .btn-primary {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    color: white; font-weight: 700; padding: 16px 28px; border-radius: 18px;
+    transition: all .3s; box-shadow: 0 10px 30px -8px rgba(16,185,129,0.5);
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    font-size: 16px;
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 14px 36px -8px rgba(16,185,129,0.65); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  .btn-danger {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    color: white; font-weight: 700; padding: 16px 28px; border-radius: 18px;
+    transition: all .3s; box-shadow: 0 10px 30px -8px rgba(239,68,68,0.5);
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; width: 100%;
+    font-size: 16px;
+  }
+  .btn-danger:hover { transform: translateY(-2px); }
+
+  .btn-ghost {
+    background: rgba(255,255,255,0.04); color: #e2e8f0; font-weight: 600;
+    padding: 12px 20px; border-radius: 14px; transition: all .3s;
+    border: 1px solid rgba(255,255,255,0.06);
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .btn-ghost:hover { background: rgba(255,255,255,0.08); }
+
+  /* حقول الإدخال */
+  .input-field {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 16px; padding: 16px 18px; color: #e2e8f0; width: 100%;
+    transition: all .3s; font-size: 16px;
+  }
+  .input-field:focus { outline: none; border-color: #10b981; background: rgba(16,185,129,0.05); box-shadow: 0 0 0 4px rgba(16,185,129,0.1); }
+  .input-field::placeholder { color: #64748b; }
+
+  /* نبض الدخول */
+  @keyframes pulseRing {
+    0% { box-shadow: 0 0 0 0 rgba(16,185,129,0.5), 0 10px 30px -8px rgba(16,185,129,0.5); }
+    70% { box-shadow: 0 0 0 22px rgba(16,185,129,0), 0 10px 30px -8px rgba(16,185,129,0.5); }
+    100% { box-shadow: 0 0 0 0 rgba(16,185,129,0), 0 10px 30px -8px rgba(16,185,129,0.5); }
+  }
+  .pulse-green { animation: pulseRing 2s infinite; }
+
+  @keyframes pulseRingRed {
+    0% { box-shadow: 0 0 0 0 rgba(239,68,68,0.5), 0 10px 30px -8px rgba(239,68,68,0.5); }
+    70% { box-shadow: 0 0 0 22px rgba(239,68,68,0), 0 10px 30px -8px rgba(239,68,68,0.5); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0), 0 10px 30px -8px rgba(239,68,68,0.5); }
+  }
+  .pulse-red { animation: pulseRingRed 2s infinite; }
+
+  /* Toast */
+  .toast-wrap { position: fixed; top: 20px; left: 50%; transform: translateX(-50%); z-index: 1000; width: 90%; max-width: 420px; pointer-events: none; }
+  .toast {
+    background: rgba(15,23,42,0.95); backdrop-filter: blur(20px); color: white;
+    padding: 14px 18px; border-radius: 14px; margin-bottom: 10px;
+    display: flex; align-items: center; gap: 12px; font-weight: 600;
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 20px 40px -10px rgba(0,0,0,0.5);
+    animation: toastIn .4s cubic-bezier(.16,1,.3,1);
+    pointer-events: auto;
+  }
+  .toast.success { border-right: 4px solid #10b981; }
+  .toast.error { border-right: 4px solid #ef4444; }
+  .toast.warning { border-right: 4px solid #f59e0b; }
+  .toast.info { border-right: 4px solid #3b82f6; }
+  .toast.out { animation: toastOut .3s forwards; }
+  @keyframes toastIn { from { opacity: 0; transform: translateY(-20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+  @keyframes toastOut { to { opacity: 0; transform: translateY(-20px) scale(0.95); } }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px);
+    z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px;
+    animation: fadeIn .3s;
+  }
+  .modal-overlay.active { display: flex; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: linear-gradient(145deg, #131c30, #0d1424); border: 1px solid rgba(255,255,255,0.08);
+    border-radius: 24px; padding: 28px; max-width: 400px; width: 100%;
+    animation: modalIn .4s cubic-bezier(.16,1,.3,1);
+  }
+  @keyframes modalIn { from { opacity: 0; transform: scale(0.9) translateY(20px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+
+  /* بطاقة إحصائية */
+  .stat-card {
+    background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+    border: 1px solid rgba(255,255,255,0.06); border-radius: 20px; padding: 18px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; right: 0; width: 60px; height: 60px;
+    background: radial-gradient(circle, var(--accent-color, rgba(16,185,129,0.3)) 0%, transparent 70%);
+    opacity: 0.5;
+  }
+
+  /* شريط التمرير */
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; }
+  ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+  /* جدول */
+  .table-row { transition: all .2s; }
+  .table-row:hover { background: rgba(16,185,129,0.05); }
+
+  /* مهمة chip */
+  .task-chip {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+    padding: 10px 14px; border-radius: 12px; cursor: pointer; transition: all .2s;
+    font-size: 13px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px;
+  }
+  .task-chip:hover { background: rgba(16,185,129,0.1); border-color: rgba(16,185,129,0.3); }
+  .task-chip.selected {
+    background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(16,185,129,0.05));
+    border-color: #10b981; color: #34d399;
+  }
+
+  /* مهمة اليوم */
+  .today-task {
+    background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+    padding: 12px 14px; border-radius: 14px; display: flex; align-items: center; gap: 10px;
+    animation: fadeUp .3s;
+  }
+
+  /* سهم Dropdown */
+  select {
+    appearance: none; -webkit-appearance: none; -moz-appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat; background-position: left 16px center; background-size: 16px;
+    padding-left: 44px;
+  }
+
+  .gradient-text {
+    background: linear-gradient(135deg, #34d399 0%, #10b981 50%, #fbbf24 100%);
+    -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+  }
+
+  .number-display { font-variant-numeric: tabular-nums; font-feature-settings: 'tnum'; }
+
+  /* تحريك لوغو */
+  @keyframes float { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+  .float { animation: float 3s ease-in-out infinite; }
+
+  @keyframes rotate { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  .rotate-slow { animation: rotate 20s linear infinite; }
+
+  /* تنبيه الحضور */
+  .live-indicator {
+    width: 10px; height: 10px; background: #10b981; border-radius: 50%;
+    animation: livePulse 1.5s ease-in-out infinite;
+  }
+  @keyframes livePulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(16,185,129,0.6); }
+    50% { box-shadow: 0 0 0 8px rgba(16,185,129,0); }
+  }
+
+  /* مهمة في الجدول */
+  .task-tag {
+    background: rgba(16,185,129,0.1); color: #34d399;
+    padding: 3px 10px; border-radius: 8px; font-size: 11px; font-weight: 600;
+    display: inline-block; margin: 2px;
+  }
+
+  /* ترانزشن للشريط السفلي */
+  @media (min-width: 640px) {
+    .bottom-nav { margin-bottom: 16px; left: 50%; transform: translateX(-50%); width: calc(100% - 32px); }
+  }
+
+  /* تحسين العرض على الديسكتوب */
+  .app-container { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+  @media (min-width: 1024px) {
+    .app-container { max-width: 720px; }
+  }
+
+  /* تأثير hover للبطاقات */
+  .hover-lift { transition: all .3s cubic-bezier(.16,1,.3,1); }
+  .hover-lift:hover { transform: translateY(-3px); }
+
+  /* إخفاء عناصر التحكم */
+  input[type="time"]::-webkit-calendar-picker-indicator,
+  input[type="date"]::-webkit-calendar-picker-indicator {
+    filter: invert(0.6); cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-decor"></div>
+<div class="bg-grid"></div>
+
+<!-- حاوية الإشعارات -->
+<div class="toast-wrap" id="toastWrap"></div>
+
+<!-- Modal للتأكيد -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal-box">
+    <div class="flex items-center gap-3 mb-4">
+      <div id="modalIcon" class="w-12 h-12 rounded-2xl flex items-center justify-center bg-amber-500/15 text-amber-400 text-xl">
+        <i class="fa-solid fa-triangle-exclamation"></i>
+      </div>
+      <div>
+        <h3 id="modalTitle" class="text-lg font-bold">تأكيد العملية</h3>
+        <p id="modalDesc" class="text-sm text-slate-400">هل أنت متأكد؟</p>
+      </div>
+    </div>
+    <p id="modalMsg" class="text-slate-300 text-sm mb-6 leading-relaxed"></p>
+    <div class="flex gap-3">
+      <button id="modalCancel" class="btn-ghost flex-1">إلغاء</button>
+      <button id="modalConfirm" class="flex-1 px-5 py-3 rounded-2xl font-bold text-white bg-gradient-to-br from-amber-500 to-orange-600 shadow-lg shadow-amber-500/30">تأكيد</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ الصفحة 1: Onboarding ============ -->
+<section class="page active" id="page-onboarding">
+  <div class="app-container min-h-screen flex flex-col justify-center py-10">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-24 h-24 rounded-3xl bg-gradient-to-br from-emerald-500/20 to-amber-500/10 border border-emerald-500/20 mb-6 float relative">
+        <i class="fa-solid fa-fingerprint text-5xl gradient-text"></i>
+        <div class="absolute inset-0 rounded-3xl border-2 border-emerald-500/20 rotate-slow"></div>
+      </div>
+      <h1 class="text-4xl font-black mb-3 gradient-text">بصمة</h1>
+      <p class="text-slate-400 text-base leading-relaxed max-w-xs mx-auto">
+        نظام تسجيل حضور وانصراف الموظفين وحفظ المهام اليومية بشكل احترافي وآمن
+      </p>
+    </div>
+
+    <div class="glass p-7">
+      <label class="block text-sm font-bold text-slate-300 mb-3">
+        <i class="fa-solid fa-user text-emerald-400 ml-1"></i>
+        أدخل اسمك للبدء
+      </label>
+      <input
+        type="text"
+        id="nameInput"
+        class="input-field mb-5"
+        placeholder="مثال: محمد أحمد"
+        maxlength="40"
+        autocomplete="off"
+      >
+      <button id="startBtn" class="btn-primary">
+        <i class="fa-solid fa-arrow-left"></i>
+        ابدأ الآن
+      </button>
+    </div>
+
+    <div class="mt-8 grid grid-cols-3 gap-3">
+      <div class="text-center p-3 glass-soft">
+        <i class="fa-solid fa-shield-halved text-emerald-400 text-xl mb-1"></i>
+        <p class="text-xs text-slate-400">بياناتك آمنة</p>
+      </div>
+      <div class="text-center p-3 glass-soft">
+        <i class="fa-solid fa-clock text-amber-400 text-xl mb-1"></i>
+        <p class="text-xs text-slate-400">تتبع فوري</p>
+      </div>
+      <div class="text-center p-3 glass-soft">
+        <i class="fa-solid fa-file-export text-blue-400 text-xl mb-1"></i>
+        <p class="text-xs text-slate-400">تصدير Excel</p>
+      </div>
+    </div>
+
+    <p class="text-center text-xs text-slate-500 mt-8">
+      سيتم حفظ بياناتك على جهازك فقط • لا يتم رفعها لأي خادم
+    </p>
+  </div>
+</section>
+
+<!-- ============ الصفحة 2: الرئيسية ============ -->
+<section class="page" id="page-home">
+  <div class="app-container py-6">
+
+    <!-- رأس الصفحة -->
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <p class="text-xs text-slate-400 mb-1">مرحباً بعودتك 👋</p>
+        <h2 id="welcomeName" class="text-2xl font-black">—</h2>
+      </div>
+      <button onclick="navigateTo('settings')" class="w-11 h-11 rounded-2xl glass-soft flex items-center justify-center text-slate-300 hover:text-emerald-400 transition">
+        <i class="fa-solid fa-gear"></i>
+      </button>
+    </header>
+
+    <!-- بطاقة الوقت والتاريخ -->
+    <div class="glass p-5 mb-5">
+      <div class="flex items-center justify-between mb-3">
+        <div class="flex items-center gap-2">
+          <i class="fa-regular fa-calendar text-emerald-400"></i>
+          <span id="currentDate" class="text-sm text-slate-300 font-medium">—</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="live-indicator"></span>
+          <span class="text-xs text-emerald-400 font-bold">مباشر</span>
+        </div>
+      </div>
+      <div class="text-center py-2">
+        <p id="currentTime" class="text-5xl font-black number-display tracking-tight">--:--:--</p>
+        <p id="currentDay" class="text-sm text-slate-400 mt-2">—</p>
+      </div>
+    </div>
+
+    <!-- بطاقة الحالة -->
+    <div id="statusCard" class="glass p-6 mb-5 text-center">
+      <!-- يتم ملؤها ديناميكياً -->
+    </div>
+
+    <!-- بطاقة المهام -->
+    <div id="taskSection" class="glass p-5 mb-5" style="display:none;">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="font-bold flex items-center gap-2">
+          <i class="fa-solid fa-list-check text-emerald-400"></i>
+          مهام اليوم
+        </h3>
+        <span id="todayTaskCount" class="text-xs bg-emerald-500/15 text-emerald-400 px-2 py-1 rounded-lg font-bold">0</span>
+      </div>
+
+      <div class="mb-4">
+        <p class="text-xs text-slate-400 mb-2">اختر المهمة التي قمت بها:</p>
+        <div id="taskChips" class="flex flex-wrap gap-2"></div>
+      </div>
+
+      <button id="addTaskBtn" class="btn-ghost w-full" disabled>
+        <i class="fa-solid fa-plus"></i>
+        إضافة مهمة للسجل
+      </button>
+
+      <div id="todayTasksList" class="mt-4 space-y-2"></div>
+    </div>
+
+    <!-- زر البصمة الرئيسي -->
+    <button id="mainActionBtn" class="btn-primary pulse-green mb-4">
+      <i class="fa-solid fa-fingerprint"></i>
+      <span id="mainActionText">تسجيل بصمة دخول</span>
+    </button>
+
+  </div>
+</section>
+
+<!-- ============ الصفحة 3: السجلات ============ -->
+<section class="page" id="page-records">
+  <div class="app-container py-6">
+
+    <header class="mb-6">
+      <h2 class="text-2xl font-black mb-1">السجلات والإحصائيات</h2>
+      <p class="text-sm text-slate-400">عرض جميع بصماتك وتفاصيل العمل</p>
+    </header>
+
+    <!-- الإحصائيات -->
+    <div class="grid grid-cols-2 gap-3 mb-6">
+      <div class="stat-card" style="--accent-color: rgba(16,185,129,0.4);">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400 font-medium">إجمالي الساعات</span>
+          <i class="fa-solid fa-clock text-emerald-400"></i>
+        </div>
+        <p id="totalHours" class="text-2xl font-black number-display">0</p>
+        <p class="text-xs text-slate-500">ساعة عمل</p>
+      </div>
+
+      <div class="stat-card" style="--accent-color: rgba(245,158,11,0.4);">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400 font-medium">أيام العمل</span>
+          <i class="fa-solid fa-calendar-check text-amber-400"></i>
+        </div>
+        <p id="totalDays" class="text-2xl font-black number-display">0</p>
+        <p class="text-xs text-slate-500">يوم</p>
+      </div>
+
+      <div class="stat-card" style="--accent-color: rgba(59,130,246,0.4);">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400 font-medium">إجمالي المهام</span>
+          <i class="fa-solid fa-list-check text-blue-400"></i>
+        </div>
+        <p id="totalTasks" class="text-2xl font-black number-display">0</p>
+        <p class="text-xs text-slate-500">مهمة مكتملة</p>
+      </div>
+
+      <div class="stat-card" style="--accent-color: rgba(168,85,247,0.4);">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs text-slate-400 font-medium">متوسط اليوم</span>
+          <i class="fa-solid fa-chart-line text-purple-400"></i>
+        </div>
+        <p id="avgHours" class="text-2xl font-black number-display">0</p>
+        <p class="text-xs text-slate-500">ساعة / يوم</p>
+      </div>
+    </div>
+
+    <!-- الفلاتر -->
+    <div class="glass p-4 mb-5">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="font-bold text-sm flex items-center gap-2">
+          <i class="fa-solid fa-filter text-emerald-400"></i>
+          تصفية البيانات
+        </h3>
+        <button id="exportFilteredBtn" class="text-xs bg-emerald-500/15 text-emerald-400 px-3 py-1.5 rounded-lg font-bold hover:bg-emerald-500/25 transition flex items-center gap-1">
+          <i class="fa-solid fa-file-excel"></i>
+          تصدير
+        </button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">الشهر</label>
+          <select id="filterMonth" class="input-field text-sm py-3"></select>
+        </div>
+        <div>
+          <label class="text-xs text-slate-400 block mb-1">اليوم</label>
+          <select id="filterDay" class="input-field text-sm py-3"></select>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mt-3">
+        <button id="clearFiltersBtn" class="btn-ghost flex-1 text-xs py-2">
+          <i class="fa-solid fa-rotate-left"></i>
+          إلغاء الفلتر
+        </button>
+        <button id="exportDayBtn" class="btn-ghost flex-1 text-xs py-2">
+          <i class="fa-solid fa-download"></i>
+          تصدير اليوم
+        </button>
+      </div>
+    </div>
+
+    <!-- الجدول -->
+    <div class="glass overflow-hidden">
+      <div class="p-4 border-b border-white/5 flex items-center justify-between">
+        <h3 class="font-bold text-sm">سجل البصمات</h3>
+        <span id="recordsCount" class="text-xs text-slate-400">0 سجل</span>
+      </div>
+
+      <div id="recordsList" class="divide-y divide-white/5">
+        <!-- يتم ملؤها ديناميكياً -->
+      </div>
+
+      <div id="emptyState" class="p-10 text-center">
+        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white/5 mb-3">
+          <i class="fa-solid fa-folder-open text-2xl text-slate-500"></i>
+        </div>
+        <p class="text-slate-400 font-medium mb-1">لا توجد سجلات</p>
+        <p class="text-xs text-slate-500">ابدأ بتسجيل بصمة دخول من الصفحة الرئيسية</p>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ الصفحة 4: الإعدادات ============ -->
+<section class="page" id="page-settings">
+  <div class="app-container py-6">
+
+    <header class="mb-6">
+      <h2 class="text-2xl font-black mb-1">الإعدادات</h2>
+      <p class="text-sm text-slate-400">إدارة حسابك والمهام والبيانات</p>
+    </header>
+
+    <!-- تعديل الاسم -->
+    <div class="glass p-5 mb-5">
+      <h3 class="font-bold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-user-pen text-emerald-400"></i>
+        تعديل الاسم
+      </h3>
+      <div class="flex gap-2">
+        <input type="text" id="editNameInput" class="input-field" maxlength="40">
+        <button id="saveNameBtn" class="px-5 rounded-2xl bg-emerald-500/15 text-emerald-400 font-bold hover:bg-emerald-500/25 transition whitespace-nowrap">
+          <i class="fa-solid fa-check"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- إدارة المهام -->
+    <div class="glass p-5 mb-5">
+      <h3 class="font-bold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-tags text-amber-400"></i>
+        إدارة المهام
+      </h3>
+      <p class="text-xs text-slate-400 mb-3">المهام المتاحة للاختيار عند تسجيل البصمة</p>
+
+      <div class="flex gap-2 mb-4">
+        <input type="text" id="newTaskInput" class="input-field text-sm" placeholder="أضف مهمة جديدة..." maxlength="30">
+        <button id="addTaskToListBtn" class="px-5 rounded-2xl bg-amber-500/15 text-amber-400 font-bold hover:bg-amber-500/25 transition whitespace-nowrap">
+          <i class="fa-solid fa-plus"></i>
+        </button>
+      </div>
+
+      <div id="tasksManagerList" class="space-y-2"></div>
+    </div>
+
+    <!-- إدارة البيانات -->
+    <div class="glass p-5 mb-5">
+      <h3 class="font-bold mb-4 flex items-center gap-2">
+        <i class="fa-solid fa-database text-blue-400"></i>
+        إدارة البيانات
+      </h3>
+
+      <div class="space-y-3">
+        <button id="exportAllBtn" class="btn-ghost w-full justify-start text-right">
+          <i class="fa-solid fa-file-excel text-emerald-400"></i>
+          <span class="flex-1">تصدير كل البيانات (Excel)</span>
+          <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
+        </button>
+
+        <button id="clearRecordsBtn" class="btn-ghost w-full justify-start text-right">
+          <i class="fa-solid fa-broom text-amber-400"></i>
+          <span class="flex-1">مسح سجلات البصمات فقط</span>
+          <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
+        </button>
+
+        <button id="clearAllBtn" class="btn-ghost w-full justify-start text-right text-red-400 hover:bg-red-500/10">
+          <i class="fa-solid fa-trash-can"></i>
+          <span class="flex-1">مسح كل البيانات (إعادة تعيين)</span>
+          <i class="fa-solid fa-chevron-left text-slate-500 text-xs"></i>
+        </button>
+      </div>
+    </div>
+
+    <!-- معلومات التطبيق -->
+    <div class="text-center py-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500/15 to-amber-500/10 border border-white/5 mb-3">
+        <i class="fa-solid fa-fingerprint text-2xl gradient-text"></i>
+      </div>
+      <p class="font-bold text-sm">تطبيق بصمة</p>
+      <p class="text-xs text-slate-500 mt-1">الإصدار 1.0.0</p>
+      <p class="text-xs text-slate-600 mt-3">جميع البيانات محفوظة محلياً على جهازك</p>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ شريط التنقل السفلي ============ -->
+<nav class="bottom-nav" id="bottomNav" style="display:none;">
+  <div class="nav-item active" data-page="home" onclick="navigateTo('home')">
+    <i class="fa-solid fa-house"></i>
+    <span>الرئيسية</span>
+  </div>
+  <div class="nav-item" data-page="records" onclick="navigateTo('records')">
+    <i class="fa-solid fa-chart-column"></i>
+    <span>السجلات</span>
+  </div>
+  <div class="nav-item" data-page="settings" onclick="navigateTo('settings')">
+    <i class="fa-solid fa-gear"></i>
+    <span>الإعدادات</span>
+  </div>
+</nav>
+
+<script>
+/* =============== الحالة العامة =============== */
+const STORAGE_KEYS = {
+  name: 'basma_employee_name',
+  tasks: 'basma_tasks_list',
+  records: 'basma_attendance_records',
+  session: 'basma_current_session',
+  todayTasks: 'basma_today_tasks'
+};
+
+const DEFAULT_TASKS = [
+  'تطوير برمجي',
+  'اجتماع فريق',
+  'كتابة تقارير',
+  'مراجعة أكواد',
+  'دعم فني',
+  'تخطيط وتحليل'
+];
+
+const state = {
+  name: localStorage.getItem(STORAGE_KEYS.name) || '',
+  tasks: JSON.parse(localStorage.getItem(STORAGE_KEYS.tasks) || 'null') || [...DEFAULT_TASKS],
+  records: JSON.parse(localStorage.getItem(STORAGE_KEYS.records) || '[]'),
+  session: JSON.parse(localStorage.getItem(STORAGE_KEYS.session) || 'null'),
+  todayTasks: JSON.parse(localStorage.getItem(STORAGE_KEYS.todayTasks) || '[]'),
+  selectedTask: null,
+  liveTimerInterval: null,
+  clockInterval: null,
+  filterMonth: 'all',
+  filterDay: 'all'
+};
+
+/* =============== أدوات مساعدة =============== */
+function save(key, data) {
+  localStorage.setItem(key, JSON.stringify(data));
+}
+
+function formatDateArabic(date) {
+  const d = new Date(date);
+  const months = ['يناير','فبراير','مارس','أبريل','مايو','يونيو','يوليو','أغسطس','سبتمبر','أكتوبر','نوفمبر','ديسمبر'];
+  const days = ['الأحد','الإثنين','الثلاثاء','الأربعاء','الخميس','الجمعة','السبت'];
+  return {
+    fullDate: `${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`,
+    dayName: days[d.getDay()],
+    time: d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false }),
+    timeShort: d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit', hour12: false }),
+    monthKey: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`,
+    monthLabel: `${months[d.getMonth()]} ${d.getFullYear()}`,
+    dayKey: d.toISOString().split('T')[0],
+    iso: d.toISOString()
+  };
+}
+
+function calcDuration(start, end) {
+  const diff = new Date(end) - new Date(start);
+  const hours = Math.floor(diff / 3600000);
+  const minutes = Math.floor((diff % 3600000) / 60000);
+  return { hours, minutes, totalMinutes: Math.floor(diff / 60000), formatted: `${hours}س ${minutes}د` };
+}
+
+function formatDuration(minutes) {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return `${h}س ${m}د`;
+}
+
+/* =============== الإشعارات =============== */
+function toast(message, type = 'info', duration = 3000) {
+  const wrap = document.getElementById('toastWrap');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  const icons = { success: 'fa-circle-check', error: 'fa-circle-xmark', warning: 'fa-triangle-exclamation', info: 'fa-circle-info' };
+  const colors = { success: 'text-emerald-400', error: 'text-red-400', warning: 'text-amber-400', info: 'text-blue-400' };
+  el.innerHTML = `<i class="fa-solid ${icons[type]} ${colors[type]} text-lg"></i><span>${message}</span>`;
+  wrap.appendChild(el);
+  setTimeout(() => {
+    el.classList.add('out');
+    setTimeout(() => el.remove(), 300);
+  }, duration);
+}
+
+/* =============== Modal =============== */
+function showConfirm({ title, desc, msg, confirmText, type = 'warning', onConfirm }) {
+  const overlay = document.getElementById('modalOverlay');
+  document.getElementById('modalTitle').textContent = title || 'تأكيد العملية';
+  document.getElementById('modalDesc').textContent = desc || '';
+  document.getElementById('modalMsg').textContent = msg || '';
+  document.getElementById('modalConfirm').textContent = confirmText || 'تأكيد';
+
+  const iconEl = document.getElementById('modalIcon');
+  const btn = document.getElementById('modalConfirm');
+  const config = {
+    warning: { icon: 'fa-triangle-exclamation', bg: 'bg-amber-500/15', text: 'text-amber-400', btn: 'from-amber-500 to-orange-600', shadow: 'shadow-amber-500/30' },
+    danger: { icon: 'fa-triangle-exclamation', bg: 'bg-red-500/15', text: 'text-red-400', btn: 'from-red-500 to-rose-600', shadow: 'shadow-red-500/30' },
+    info: { icon: 'fa-circle-info', bg: 'bg-blue-500/15', text: 'text-blue-400', btn: 'from-blue-500 to-indigo-600', shadow: 'shadow-blue-500/30' }
+  }[type];
+
+  iconEl.className = `w-12 h-12 rounded-2xl flex items-center justify-center ${config.bg} ${config.text} text-xl`;
+  iconEl.innerHTML = `<i class="fa-solid ${config.icon}"></i>`;
+  btn.className = `flex-1 px-5 py-3 rounded-2xl font-bold text-white bg-gradient-to-br ${config.btn} shadow-lg ${config.shadow}`;
+
+  overlay.classList.add('active');
+
+  const confirmBtn = document.getElementById('modalConfirm');
+  const cancelBtn = document.getElementById('modalCancel');
+  const close = () => overlay.classList.remove('active');
+  confirmBtn.onclick = () => { close(); if (onConfirm) onConfirm(); };
+  cancelBtn.onclick = close;
+  overlay.onclick = (e) => { if (e.target === overlay) close(); };
+}
+
+/* =============== التنقل =============== */
+function navigateTo(page) {
+  // إخفاء كل الصفحات
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  // إظهار الصفحة المطلوبة
+  const target = document.getElementById(`page-${page}`);
+  if (target) target.classList.add('active');
+
+  // تحديث الشريط السفلي
+  document.querySelectorAll('.nav-item').forEach(item => {
+    item.classList.toggle('active', item.dataset.page === page);
+  });
+
+  // تحديث المحتوى حسب الصفحة
+  if (page === 'home') renderHome();
+  if (page === 'records') renderRecords();
+  if (page === 'settings') renderSettings();
+
+  // تمرير لأعلى
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+/* =============== الصفحة 1: Onboarding =============== */
+function initOnboarding() {
+  const nameInput = document.getElementById('nameInput');
+  const startBtn = document.getElementById('startBtn');
+
+  // إذا الاسم موجود، انتقل مباشرة للرئيسية
+  if (state.name) {
+    enterApp();
+    return;
+  }
+
+  nameInput.focus();
+  nameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter' && nameInput.value.trim()) enterApp();
+  });
+
+  startBtn.onclick = () => {
+    const name = nameInput.value.trim();
+    if (!name) {
+      toast('الرجاء إدخال اسمك أولاً', 'warning');
+      nameInput.focus();
+      return;
+    }
+    enterApp(name);
+  };
+}
+
+function enterApp(name) {
+  if (name) {
+    state.name = name;
+    save(STORAGE_KEYS.name, name);
+    toast(`أهلاً بك ${name}! 🎉`, 'success');
+  }
+  // إخفاء صفحة الـ onboarding وإظهار التطبيق
+  document.getElementById('page-onboarding').classList.remove('active');
+  document.getElementById('bottomNav').style.display = 'flex';
+  navigateTo('home');
+}
+
+/* =============== الصفحة 2: الرئيسية =============== */
+function startClock() {
+  if (state.clockInterval) clearInterval(state.clockInterval);
+  const update = () => {
+    const now = new Date();
+    const info = formatDateArabic(now);
+    document.getElementById('currentTime').textContent = info.time;
+    document.getElementById('currentDate').textContent = info.fullDate;
+    document.getElementById('currentDay').textContent = info.dayName;
+  };
+  update();
+  state.clockInterval = setInterval(update, 1000);
+}
+
+function renderHome() {
+  document.getElementById('welcomeName').textContent = state.name;
+  startClock();
+  renderStatusCard();
+  renderTaskSection();
+  updateMainActionButton();
+}
+
+function renderStatusCard() {
+  const card = document.getElementById('statusCard');
+  if (state.session) {
+    // الموظف داخل
+    const start = new Date(state.session.checkIn);
+    card.innerHTML = `
+      <div class="inline-flex items-center gap-2 bg-emerald-500/15 text-emerald-400 px-3 py-1 rounded-full text-xs font-bold mb-3">
+        <span class="live-indicator"></span>
+        حالياً في العمل
+      </div>
+      <p class="text-sm text-slate-400 mb-1">مدة العمل حتى الآن</p>
+      <p id="liveTimer" class="text-4xl font-black number-display gradient-text mb-3">00:00:00</p>
+      <div class="flex items-center justify-center gap-4 text-xs text-slate-400">
+        <span><i class="fa-solid fa-sign-in-alt text-emerald-400 ml-1"></i> دخول: ${formatDateArabic(start).timeShort}</span>
+      </div>
+    `;
+    startLiveTimer();
+  } else {
+    // الموظف خارج
+    stopLiveTimer();
+    card.innerHTML = `
+      <div class="inline-flex items-center gap-2 bg-slate-500/15 text-slate-400 px-3 py-1 rounded-full text-xs font-bold mb-3">
+        <i class="fa-solid fa-pause"></i>
+        خارج العمل
+      </div>
+      <p class="text-3xl font-black text-slate-300 mb-2">لم تبدأ بعد</p>
+      <p class="text-sm text-slate-400">اضغط على زر البصمة بالأسفل لتسجيل دخولك</p>
+    `;
+  }
+}
+
+function startLiveTimer() {
+  stopLiveTimer();
+  const update = () => {
+    if (!state.session) return;
+    const elapsed = Date.now() - new Date(state.session.checkIn).getTime();
+    const h = Math.floor(elapsed / 3600000);
+    const m = Math.floor((elapsed % 3600000) / 60000);
+    const s = Math.floor((elapsed % 60000) / 1000);
+    const el = document.getElementById('liveTimer');
+    if (el) el.textContent = `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+  };
+  update();
+  state.liveTimerInterval = setInterval(update, 1000);
+}
+
+function stopLiveTimer() {
+  if (state.liveTimerInterval) {
+    clearInterval(state.liveTimerInterval);
+    state.liveTimerInterval = null;
+  }
+}
+
+function renderTaskSection() {
+  const section = document.getElementById('taskSection');
+  if (!state.session) {
+    section.style.display = 'none';
+    return;
+  }
+  section.style.display = 'block';
+
+  // عرض chips المهام
+  const chipsWrap = document.getElementById('taskChips');
+  chipsWrap.innerHTML = state.tasks.map(t => `
+    <div class="task-chip ${state.selectedTask === t ? 'selected' : ''}" onclick="selectTask('${t.replace(/'/g, "\\'")}')">
+      <i class="fa-solid fa-circle-check text-xs"></i>
+      ${t}
+    </div>
+  `).join('');
+
+  // زر الإضافة
+  const addBtn = document.getElementById('addTaskBtn');
+  addBtn.disabled = !state.selectedTask;
+  addBtn.onclick = addTaskToToday;
+
+  // قائمة مهام اليوم
+  renderTodayTasks();
+}
+
+function selectTask(task) {
+  state.selectedTask = state.selectedTask === task ? null : task;
+  renderTaskSection();
+}
+
+function addTaskToToday() {
+  if (!state.selectedTask) {
+    toast('اختر مهمة أولاً', 'warning');
+    return;
+  }
+  const task = {
+    id: Date.now(),
+    name: state.selectedTask,
+    time: new Date().toISOString()
+  };
+  state.todayTasks.push(task);
+  save(STORAGE_KEYS.todayTasks, state.todayTasks);
+  // حفظ في الجلسة أيضاً
+  if (state.session) {
+    if (!state.session.tasks) state.session.tasks = [];
+    state.session.tasks.push(task);
+    save(STORAGE_KEYS.session, state.session);
+  }
+  state.selectedTask = null;
+  toast(`تم تسجيل المهمة: ${task.name}`, 'success');
+  renderTaskSection();
+}
+
+function renderTodayTasks() {
+  const list = document.getElementById('todayTasksList');
+  const count = document.getElementById('todayTaskCount');
+  if (!state.todayTasks.length) {
+    list.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">لا توجد مهام مسجلة اليوم</p>`;
+    count.textContent = '0';
+    return;
+  }
+  count.textContent = state.todayTasks.length;
+  list.innerHTML = state.todayTasks.map(t => {
+    const time = formatDateArabic(t.time).timeShort;
+    return `
+      <div class="today-task">
+        <div class="w-8 h-8 rounded-lg bg-emerald-500/15 flex items-center justify-center text-emerald-400 text-sm">
+          <i class="fa-solid fa-check"></i>
+        </div>
+        <div class="flex-1">
+          <p class="text-sm font-bold">${t.name}</p>
+          <p class="text-xs text-slate-500">${time}</p>
+        </div>
+        <button onclick="removeTodayTask(${t.id})" class="text-slate-500 hover:text-red-400 transition p-1">
+          <i class="fa-solid fa-times"></i>
+        </button>
+      </div>
+    `;
+  }).join('');
+}
+
+function removeTodayTask(id) {
+  state.todayTasks = state.todayTasks.filter(t => t.id !== id);
+  save(STORAGE_KEYS.todayTasks, state.todayTasks);
+  if (state.session && state.session.tasks) {
+    state.session.tasks = state.session.tasks.filter(t => t.id !== id);
+    save(STORAGE_KEYS.session, state.session);
+  }
+  renderTodayTasks();
+  toast('تم حذف المهمة', 'info');
+}
+
+function updateMainActionButton() {
+  const btn = document.getElementById('mainActionBtn');
+  const text = document.getElementById('mainActionText');
+  if (state.session) {
+    btn.className = 'btn-danger pulse-red mb-4';
+    btn.innerHTML = `<i class="fa-solid fa-right-from-bracket"></i><span>تسجيل بصمة خروج</span>`;
+    btn.onclick = confirmCheckOut;
+  } else {
+    btn.className = 'btn-primary pulse-green mb-4';
+    btn.innerHTML = `<i class="fa-solid fa-fingerprint"></i><span>تسجيل بصمة دخول</span>`;
+    btn.onclick = checkIn;
+  }
+}
+
+function checkIn() {
+  if (state.session) {
+    toast('أنت مسجل دخول بالفعل', 'warning');
+    return;
+  }
+  const now = new Date().toISOString();
+  state.session = {
+    checkIn: now,
+    tasks: []
+  };
+  state.todayTasks = [];
+  save(STORAGE_KEYS.session, state.session);
+  save(STORAGE_KEYS.todayTasks, state.todayTasks);
+  toast('تم تسجيل بصمة الدخول بنجاح ✓', 'success');
+  renderHome();
+}
+
+function confirmCheckOut() {
+  if (!state.session) return;
+  showConfirm({
+    title: 'تأكيد بصمة الخروج',
+    desc: 'هل أنت متأكد؟',
+    msg: `سيتم إنهاء جلسة العمل الحالية وحفظ السجل. لن تتمكن من التعديل بعد ذلك.`,
+    confirmText: 'نعم، تسجيل الخروج',
+    type: 'warning',
+    onConfirm: checkOut
+  });
+}
+
+function checkOut() {
+  if (!state.session) return;
+  const checkOutTime = new Date().toISOString();
+  const record = {
+    id: Date.now(),
+    checkIn: state.session.checkIn,
+    checkOut: checkOutTime,
+    tasks: state.todayTasks,
+    duration: calcDuration(state.session.checkIn, checkOutTime).totalMinutes
+  };
+  state.records.push(record);
+  save(STORAGE_KEYS.records, state.records);
+  state.session = null;
+  state.todayTasks = [];
+  save(STORAGE_KEYS.session, null);
+  save(STORAGE_KEYS.todayTasks, []);
+  toast('تم تسجيل بصمة الخروج وحفظ السجل ✓', 'success');
+  renderHome();
+}
+
+/* =============== الصفحة 3: السجلات =============== */
+function renderRecords() {
+  updateStats();
+  populateFilters();
+  renderRecordsList();
+}
+
+function updateStats() {
+  const filtered = getFilteredRecords();
+  let totalMinutes = 0;
+  let totalTasks = 0;
+  const uniqueDays = new Set();
+
+  filtered.forEach(r => {
+    totalMinutes += r.duration || 0;
+    totalTasks += (r.tasks || []).length;
+    uniqueDays.add(r.checkIn.split('T')[0]);
+  });
+
+  const totalHours = (totalMinutes / 60).toFixed(1);
+  const days = uniqueDays.size;
+  const avg = days > 0 ? (totalMinutes / days / 60).toFixed(1) : '0';
+
+  document.getElementById('totalHours').textContent = totalHours;
+  document.getElementById('totalDays').textContent = days;
+  document.getElementById('totalTasks').textContent = totalTasks;
+  document.getElementById('avgHours').textContent = avg;
+}
+
+function getAvailableMonths() {
+  const months = new Map();
+  state.records.forEach(r => {
+    const d = new Date(r.checkIn);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const label = formatDateArabic(r.checkIn).monthLabel;
+    if (!months.has(key)) months.set(key, label);
+  });
+  return Array.from(months.entries()).sort().reverse();
+}
+
+function getAvailableDays(monthKey) {
+  const days = new Map();
+  state.records.forEach(r => {
+    const d = new Date(r.checkIn);
+    const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    if (monthKey !== 'all' && mKey !== monthKey) return;
+    const info = formatDateArabic(r.checkIn);
+    days.set(info.dayKey, `${info.dayName} ${d.getDate()}`);
+  });
+  return Array.from(days.entries()).sort().reverse();
+}
+
+function populateFilters() {
+  const monthSelect = document.getElementById('filterMonth');
+  const daySelect = document.getElementById('filterDay');
+
+  const months = getAvailableMonths();
+  monthSelect.innerHTML = `<option value="all">كل الشهور</option>` +
+    months.map(([k, l]) => `<option value="${k}" ${state.filterMonth === k ? 'selected' : ''}>${l}</option>`).join('');
+
+  const days = getAvailableDays(state.filterMonth);
+  daySelect.innerHTML = `<option value="all">كل الأيام</option>` +
+    days.map(([k, l]) => `<option value="${k}" ${state.filterDay === k ? 'selected' : ''}>${l}</option>`).join('');
+
+  monthSelect.onchange = (e) => {
+    state.filterMonth = e.target.value;
+    state.filterDay = 'all';
+    renderRecords();
+  };
+  daySelect.onchange = (e) => {
+    state.filterDay = e.target.value;
+    renderRecords();
+  };
+}
+
+function getFilteredRecords() {
+  return state.records.filter(r => {
+    const d = new Date(r.checkIn);
+    const mKey = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const dKey = d.toISOString().split('T')[0];
+    if (state.filterMonth !== 'all' && mKey !== state.filterMonth) return false;
+    if (state.filterDay !== 'all' && dKey !== state.filterDay) return false;
+    return true;
+  }).sort((a, b) => new Date(b.checkIn) - new Date(a.checkIn));
+}
+
+function renderRecordsList() {
+  const list = document.getElementById('recordsList');
+  const empty = document.getElementById('emptyState');
+  const count = document.getElementById('recordsCount');
+
+  const filtered = getFilteredRecords();
+  count.textContent = `${filtered.length} سجل`;
+
+  if (filtered.length === 0) {
+    list.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(r => {
+    const checkInInfo = formatDateArabic(r.checkIn);
+    const checkOutInfo = formatDateArabic(r.checkOut);
+    const duration = formatDuration(r.duration || 0);
+    const tasks = (r.tasks || []).map(t => `<span class="task-tag">${t.name}</span>`).join('');
+
+    return `
+      <div class="table-row p-4">
+        <div class="flex items-start justify-between mb-3">
+          <div>
+            <p class="font-bold text-sm mb-1">${checkInInfo.dayName} ${checkInInfo.fullDate.split(' ')[0]}</p>
+            <p class="text-xs text-slate-500">${checkInInfo.fullDate}</p>
+          </div>
+          <div class="text-left">
+            <p class="font-black text-emerald-400 number-display">${duration}</p>
+            <p class="text-xs text-slate-500">مدة العمل</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-2 mb-3">
+          <div class="glass-soft p-2.5">
+            <p class="text-xs text-slate-500 mb-0.5"><i class="fa-solid fa-sign-in-alt text-emerald-400 ml-1"></i> دخول</p>
+            <p class="font-bold text-sm number-display">${checkInInfo.timeShort}</p>
+          </div>
+          <div class="glass-soft p-2.5">
+            <p class="text-xs text-slate-500 mb-0.5"><i class="fa-solid fa-right-from-bracket text-red-400 ml-1"></i> خروج</p>
+            <p class="font-bold text-sm number-display">${checkOutInfo.timeShort}</p>
+          </div>
+        </div>
+
+        ${tasks ? `<div class="flex flex-wrap gap-1 mb-2">${tasks}</div>` : '<p class="text-xs text-slate-500 mb-2"><i class="fa-solid fa-info-circle ml-1"></i> لا توجد مهام مسجلة</p>'}
+      </div>
+    `;
+  }).join('');
+}
+
+/* =============== تصدير Excel =============== */
+function exportToExcel(records, filename = 'بصمة_السجلات') {
+  if (!records || records.length === 0) {
+    toast('لا توجد بيانات للتصدير', 'warning');
+    return;
+  }
+
+  const data = records.map(r => {
+    const checkIn = formatDateArabic(r.checkIn);
+    const checkOut = formatDateArabic(r.checkOut);
+    const tasks = (r.tasks || []).map(t => t.name).join('، ');
+    return {
+      'التاريخ': checkIn.fullDate,
+      'اليوم': checkIn.dayName,
+      'وقت الدخول': checkIn.timeShort,
+      'وقت الخروج': checkOut.timeShort,
+      'مدة العمل': formatDuration(r.duration || 0),
+      'عدد المهام': (r.tasks || []).length,
+      'المهام': tasks || '—'
+    };
+  });
+
+  // إضافة صف الملخص
+  const totalMin = records.reduce((s, r) => s + (r.duration || 0), 0);
+  data.push({
+    'التاريخ': '—',
+    'اليوم': 'الإجمالي',
+    'وقت الدخول': '—',
+    'وقت الخروج': '—',
+    'مدة العمل': formatDuration(totalMin),
+    'عدد المهام': records.reduce((s, r) => s + (r.tasks || []).length, 0),
+    'المهام': '—'
+  });
+
+  const ws = XLSX.utils.json_to_sheet(data);
+  // ضبط عرض الأعمدة
+  ws['!cols'] = [{ wch: 18 }, { wch: 12 }, { wch: 12 }, { wch: 12 }, { wch: 14 }, { wch: 12 }, { wch: 40 }];
+
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, 'السجلات');
+  XLSX.writeFile(wb, `${filename}_${new Date().toISOString().split('T')[0]}.xlsx`);
+  toast('تم تصدير الملف بنجاح ✓', 'success');
+}
+
+/* =============== الصفحة 4: الإعدادات =============== */
+function renderSettings() {
+  document.getElementById('editNameInput').value = state.name;
+  renderTasksManager();
+}
+
+function renderTasksManager() {
+  const list = document.getElementById('tasksManagerList');
+  if (state.tasks.length === 0) {
+    list.innerHTML = `<p class="text-xs text-slate-500 text-center py-3">لا توجد مهام. أضف مهمة جديدة.</p>`;
+    return;
+  }
+  list.innerHTML = state.tasks.map((t, i) => `
+    <div class="flex items-center justify-between p-3 glass-soft">
+      <div class="flex items-center gap-3">
+        <div class="w-8 h-8 rounded-lg bg-amber-500/15 flex items-center justify-center text-amber-400 text-xs font-bold">
+          ${i + 1}
+        </div>
+        <span class="font-medium text-sm">${t}</span>
+      </div>
+      <button onclick="deleteTask(${i})" class="text-slate-500 hover:text-red-400 transition p-1">
+        <i class="fa-solid fa-trash-can text-sm"></i>
+      </button>
+    </div>
+  `).join('');
+}
+
+function deleteTask(index) {
+  const taskName = state.tasks[index];
+  showConfirm({
+    title: 'حذف المهمة',
+    desc: `سيتم حذف "${taskName}"`,
+    msg: 'لن تظهر هذه المهمة في قائمة الاختيار مستقبلاً. لن تتأثر السجلات السابقة.',
+    confirmText: 'حذف',
+    type: 'danger',
+    onConfirm: () => {
+      state.tasks.splice(index, 1);
+      save(STORAGE_KEYS.tasks, state.tasks);
+      renderTasksManager();
+      toast('تم حذف المهمة', 'success');
+    }
+  });
+}
+
+/* =============== تهيئة الأحداث =============== */
+function initEvents() {
+  // الإعدادات: حفظ الاسم
+  document.getElementById('saveNameBtn').onclick = () => {
+    const newName = document.getElementById('editNameInput').value.trim();
+    if (!newName) {
+      toast('الاسم لا يمكن أن يكون فارغاً', 'warning');
+      return;
+    }
+    state.name = newName;
+    save(STORAGE_KEYS.name, newName);
+    toast('تم حفظ الاسم ✓', 'success');
+  };
+
+  // الإعدادات: إضافة مهمة
+  const newTaskInput = document.getElementById('newTaskInput');
+  const addNewTask = () => {
+    const val = newTaskInput.value.trim();
+    if (!val) {
+      toast('اكتب اسم المهمة', 'warning');
+      return;
+    }
+    if (state.tasks.includes(val)) {
+      toast('هذه المهمة موجودة بالفعل', 'warning');
+      return;
+    }
+    state.tasks.push(val);
+    save(STORAGE_KEYS.tasks, state.tasks);
+    newTaskInput.value = '';
+    renderTasksManager();
+    toast('تمت إضافة المهمة ✓', 'success');
+  };
+  document.getElementById('addTaskToListBtn').onclick = addNewTask;
+  newTaskInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') addNewTask(); });
+
+  // الإعدادات: تصدير الكل
+  document.getElementById('exportAllBtn').onclick = () => {
+    if (state.records.length === 0) {
+      toast('لا توجد سجلات للتصدير', 'warning');
+      return;
+    }
+    exportToExcel(state.records, 'بصمة_كل_السجلات');
+  };
+
+  // تصدير المفلتر
+  document.getElementById('exportFilteredBtn').onclick = () => {
+    const filtered = getFilteredRecords();
+    if (filtered.length === 0) {
+      toast('لا توجد بيانات للتصدير', 'warning');
+      return;
+    }
+    exportToExcel(filtered, 'بصمة_سجلات_مفلترة');
+  };
+
+  // تصدير يوم محدد
+  document.getElementById('exportDayBtn').onclick = () => {
+    if (state.filterDay === 'all') {
+      toast('اختر يوماً محدداً من الفلتر أولاً', 'warning');
+      return;
+    }
+    const filtered = getFilteredRecords();
+    if (filtered.length === 0) {
+      toast('لا توجد سجلات في هذا اليوم', 'warning');
+      return;
+    }
+    exportToExcel(filtered, `بصمة_يوم_${state.filterDay}`);
+  };
+
+  // إلغاء الفلتر
+  document.getElementById('clearFiltersBtn').onclick = () => {
+    state.filterMonth = 'all';
+    state.filterDay = 'all';
+    renderRecords();
+    toast('تم إلغاء الفلاتر', 'info');
+  };
+
+  // مسح السجلات فقط
+  document.getElementById('clearRecordsBtn').onclick = () => {
+    if (state.records.length === 0) {
+      toast('لا توجد سجلات للمسح', 'warning');
+      return;
+    }
+    showConfirm({
+      title: 'مسح السجلات',
+      desc: `${state.records.length} سجل سيتم حذفه`,
+      msg: 'سيتم حذف جميع سجلات البصمات السابقة. لا يمكن التراجع عن هذا الإجراء. ننصح بتصدير البيانات أولاً.',
+      confirmText: 'مسح السجلات',
+      type: 'danger',
+      onConfirm: () => {
+        state.records = [];
+        save(STORAGE_KEYS.records, []);
+        renderRecords();
+        toast('تم مسح السجلات', 'success');
+      }
+    });
+  };
+
+  // مسح كل البيانات
+  document.getElementById('clearAllBtn').onclick = () => {
+    showConfirm({
+      title: 'إعادة تعيين التطبيق',
+      desc: 'تحذير: سيتم مسح كل شيء',
+      msg: 'سيتم حذف اسمك، جميع السجلات، المهام المخصصة، والجلسة الحالية. سيتم إرجاعك لصفحة البداية. لا يمكن التراجع.',
+      confirmText: 'نعم، امسح كل شيء',
+      type: 'danger',
+      onConfirm: () => {
+        localStorage.removeItem(STORAGE_KEYS.name);
+        localStorage.removeItem(STORAGE_KEYS.tasks);
+        localStorage.removeItem(STORAGE_KEYS.records);
+        localStorage.removeItem(STORAGE_KEYS.session);
+        localStorage.removeItem(STORAGE_KEYS.todayTasks);
+        state.name = '';
+        state.tasks = [...DEFAULT_TASKS];
+        state.records = [];
+        state.session = null;
+        state.todayTasks = [];
+        stopLiveTimer();
+        document.getElementById('bottomNav').style.display = 'none';
+        document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+        document.getElementById('page-onboarding').classList.add('active');
+        document.getElementById('nameInput').value = '';
+        toast('تم مسح جميع البيانات', 'success');
+        initOnboarding();
+      }
+    });
+  };
+}
+
+/* =============== البدء =============== */
+document.addEventListener('DOMContentLoaded', () => {
+  initOnboarding();
+  initEvents();
+});
+
+// منع تحديد النص على الأزرار
+document.addEventListener('selectstart', (e) => {
+  if (e.target.closest('button, .nav-item, .task-chip')) e.preventDefault();
+});
+</script>
+
+</body>
+</html>
